@@ -1,4 +1,4 @@
-#include "MediaPlayerImpl.h"
+ï»¿#include "MediaPlayerImpl.h"
 #include "MediaPlayerRescaler.h"
 #include "libos.h"
 
@@ -20,7 +20,7 @@ static void readAudioDataCb(void * udata, uint8_t * data, int len)
     audio_info->len -= len;
 }
 
-bool CMediaPlayerImpl::open(const char* url)
+bool CMediaPlayerImpl::open(const char * url)
 {
     if (nullptr == url)
     {
@@ -42,7 +42,7 @@ bool CMediaPlayerImpl::open(const char* url)
     }
 
     int ret = -1;
-    do 
+    do
     {
         ret = avformat_open_input(&_fmt_ctx, url, nullptr, nullptr);
         if (0 != ret)
@@ -150,7 +150,7 @@ int64_t CMediaPlayerImpl::getVideoDuration()
         return -1;
     }
 
-    return _video_stream->duration;
+    return static_cast<int64_t>(static_cast<double>(_video_stream->duration) * av_q2d(_video_stream->time_base));
 }
 
 int64_t CMediaPlayerImpl::getVideoPos()
@@ -180,7 +180,7 @@ bool CMediaPlayerImpl::start(const void * wnd, int width, int height)
         return true;
     }
 
-    // ´´½¨ÊÓÆµ½âÂëÆ÷
+    // åˆ›å»ºè§†é¢‘è§£ç å™¨
     _video_decoder = createDecoder(_video_index);
     if (nullptr == _video_decoder)
     {
@@ -194,14 +194,14 @@ bool CMediaPlayerImpl::start(const void * wnd, int width, int height)
         _frm_height = _video_decoder->height;
     }
 
-    // ´´½¨ÊÓÆµ²¥·ÅÆ÷
+    // åˆ›å»ºè§†é¢‘æ’­æ”¾å™¨
     if (!createVideoPlayer(wnd, width, height))
     {
         log_msg_warn("createVideoPlayer");
         goto ERR;
     }
 
-    // ´´½¨ÊÓÆµ×ª»»Æ÷
+    // åˆ›å»ºè§†é¢‘è½¬æ¢å™¨
     _rescaler = new (std::nothrow)CMediaPlayerRescaler();
     if (nullptr == _rescaler)
     {
@@ -234,7 +234,7 @@ bool CMediaPlayerImpl::start(const void * wnd, int width, int height)
     }
 
     _is_playing = true;
-    // »½ĞÑ¶Á°üÏß³Ì
+    // å”¤é†’è¯»åŒ…çº¿ç¨‹
     _packets_cond.notify_one();
 
     return true;
@@ -308,7 +308,7 @@ AVCodecContext * CMediaPlayerImpl::createDecoder(int stream_index)
     }
 
     int ret = 0;
-    do 
+    do
     {
         ret = avcodec_parameters_to_context(decoder, codecpar);
         if (ret < 0)
@@ -333,7 +333,7 @@ AVCodecContext * CMediaPlayerImpl::createDecoder(int stream_index)
         avcodec_free_context(&decoder);
         decoder = nullptr;
     }
-   
+
     return decoder;
 }
 
@@ -425,21 +425,21 @@ bool CMediaPlayerImpl::createVideoPlayer(const void * wnd, int width, int height
         return false;
     }
 
-    // ´´½¨´°¿Ú
+    // åˆ›å»ºçª—å£
     _player_wnd = SDL_CreateWindowFrom(wnd);
     if (nullptr == _player_wnd)
     {
         log_msg_warn("SDL_CreateWindowFrom failed.");
         return false;
     }
-    // ´´½¨äÖÈ¾Æ÷
+    // åˆ›å»ºæ¸²æŸ“å™¨
     _sdl_render = SDL_CreateRenderer(_player_wnd, -1, SDL_RENDERER_TARGETTEXTURE);
     if (nullptr == _sdl_render)
     {
         log_msg_warn("SDL_CreateRenderer failed.");
         goto ERR;
     }
-    // ´´½¨ÎÆÀíÆ÷
+    // åˆ›å»ºçº¹ç†å™¨
     _sdl_texture = SDL_CreateTexture(_sdl_render, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, width, height);
     if (nullptr == _sdl_render)
     {
@@ -490,7 +490,7 @@ bool CMediaPlayerImpl::createAudioPlayer()
     _audio_info->len = 0;
 
     SDL_AudioSpec audio_player;
-    audio_player.freq = _audio_decoder->sample_rate; //¸ù¾İÄãÂ¼ÖÆµÄPCM²ÉÑùÂÊ¾ö¶¨
+    audio_player.freq = _audio_decoder->sample_rate; //æ ¹æ®ä½ å½•åˆ¶çš„PCMé‡‡æ ·ç‡å†³å®š
     audio_player.format = AUDIO_S16SYS;
     audio_player.channels = _audio_decoder->channels;
     audio_player.silence = 0;
@@ -610,14 +610,14 @@ void CMediaPlayerImpl::dealVideoPacketsThr()
 
     while (_is_init)
     {
-        // Ã»ÔÚ²¥·ÅÖĞ
+        // æ²¡åœ¨æ’­æ”¾ä¸­
         if (!_is_playing)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             continue;
         }
 
-        // ²¥·ÅÊÓÆµ
+        // æ’­æ”¾è§†é¢‘
         AVPacket pkt;
         if (!_video_queue.pop(pkt))
         {
@@ -673,7 +673,7 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
     std::unique_lock<std::mutex> lck(_audio_mtx);
     _audio_cond.wait(lck);
 
-    int out_buff_size = av_samples_get_buffer_size(nullptr, av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO), 
+    int out_buff_size = av_samples_get_buffer_size(nullptr, av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO),
                                                    1024, AV_SAMPLE_FMT_S16, 64);
     uint8_t * out_buff = (uint8_t *)av_malloc(192000 * 2);
 
@@ -686,13 +686,13 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
 
     while (_is_init)
     {
-        // Ã»ÔÚ²¥·ÅÖĞ
+        // æ²¡åœ¨æ’­æ”¾ä¸­
         if (!_is_playing)
         {
             continue;
         }
 
-        // ²¥·ÅÊÓÆµ
+        // æ’­æ”¾è§†é¢‘
         AVPacket pkt;
         if (!_audio_queue.pop(pkt))
         {
@@ -701,7 +701,7 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
         }
 
         bool got = false;
-       
+
         if (!decodeAudioPacket(&pkt, frm, &got))
         {
             log_msg_warn("decodeAudioPacket failed!");
