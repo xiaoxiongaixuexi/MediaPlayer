@@ -71,9 +71,6 @@ public:
     // 暂停
     bool pause();
 
-    // 停止
-    bool stop();
-
     // 快进
     bool forward();
 

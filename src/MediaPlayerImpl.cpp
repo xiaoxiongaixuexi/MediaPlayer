@@ -229,7 +229,7 @@ bool CMediaPlayerImpl::start(const void * wnd, int width, int height)
 
     if (!createAudioRescaler())
     {
-        log_msg_warn("");
+        log_msg_warn("createAudioRescaler failed!");
         goto ERR;
     }
 
@@ -260,11 +260,6 @@ bool CMediaPlayerImpl::pause()
 {
     _is_pause = true;
     _is_playing = false;
-    return true;
-}
-
-bool CMediaPlayerImpl::stop()
-{
     return true;
 }
 

@@ -293,7 +293,6 @@ void CMediaPlayerDlg::OnBnClickedBtnStop()
     if (m_pMediaPtr)
     {
         m_pMediaPtr->close();
-        m_pMediaPtr->stop();
         delete m_pMediaPtr;
         m_pMediaPtr = nullptr;
     }
