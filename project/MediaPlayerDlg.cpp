@@ -69,6 +69,8 @@ void CMediaPlayerDlg::DoDataExchange(CDataExchange * pDX)
     DDX_Control(pDX, IDC_BTN_LAST, m_btnLast);
     DDX_Control(pDX, IDC_BTN_NEXT, m_btnNext);
     DDX_Control(pDX, IDC_BTN_VOICE, m_btnVoice);
+    DDX_Control(pDX, IDC_SLD_PROGRESS, m_sldProgress);
+    DDX_Control(pDX, IDC_SLD_VOICE, m_sldVoice);
 }
 
 BEGIN_MESSAGE_MAP(CMediaPlayerDlg, CDialogEx)
@@ -84,6 +86,7 @@ BEGIN_MESSAGE_MAP(CMediaPlayerDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BTN_LAST, &CMediaPlayerDlg::OnBnClickedBtnLast)
     ON_BN_CLICKED(IDC_BTN_NEXT, &CMediaPlayerDlg::OnBnClickedBtnNext)
     ON_BN_CLICKED(IDC_BTN_VOICE, &CMediaPlayerDlg::OnBnClickedBtnVoice)
+    ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLD_VOICE, &CMediaPlayerDlg::OnNMCustomdrawSldVoice)
 END_MESSAGE_MAP()
 
 
@@ -174,6 +177,9 @@ BOOL CMediaPlayerDlg::OnInitDialog()
     m_btnNext.SetIcon(m_icoNext);
     m_btnVoice.SetIcon(m_icoVoice);
     m_btnOpen.SetIcon(m_icoOpen);
+    m_sldVoice.SetRange(0, 128);
+    m_sldVoice.SetTicFreq(1);
+    m_sldVoice.SetPos(80);
 
     return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -347,9 +353,9 @@ void CMediaPlayerDlg::OnBnClickedBtnOpen()
             MessageBox(_T("获取文件时长失败！"), _T("提示"), MB_OK | MB_ICONWARNING);
             return;
         }
-        int hour = duration / 3600;
-        int minute = duration / 60 % 60;
-        int second = duration % 60;
+        int hour = static_cast<int>(duration / 3600);
+        int minute = static_cast<int>(duration / 60 % 60);
+        int second = static_cast<int>(duration % 60);
         CString strVideoDuration;
         strVideoDuration.Format(_T("00:00:00/%02d:%02d:%02d"), hour, minute, second);
         m_stcDuration.SetWindowText(strVideoDuration);
@@ -388,10 +394,40 @@ void CMediaPlayerDlg::OnBnClickedBtnNext()
 
 void CMediaPlayerDlg::OnBnClickedBtnVoice()
 {
-    static bool is_silence = true;
-    if (!is_silence)
-        m_btnVoice.SetIcon(m_icoVoice);
-    else
+    int iVolume = 0;
+    int iVoice = m_sldVoice.GetPos();
+    if (iVoice > 0)
+    {
         m_btnVoice.SetIcon(m_icoSilence);
-    is_silence = !is_silence;
+        m_sldVoice.SetPos(0);
+        iVolume = 0;
+    }
+    else
+    {
+        m_btnVoice.SetIcon(m_icoVoice);
+        m_sldVoice.SetPos(64);
+        iVolume = 64;
+    }
+
+    if (m_pMediaPtr)
+    {
+        m_pMediaPtr->setVolume(iVolume);
+    }
+}
+
+
+void CMediaPlayerDlg::OnNMCustomdrawSldVoice(NMHDR * pNMHDR, LRESULT * pResult)
+{
+    LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
+    int iVoice = m_sldVoice.GetPos();
+    if (iVoice <= 0)
+        m_btnVoice.SetIcon(m_icoSilence);
+    else
+        m_btnVoice.SetIcon(m_icoVoice);
+    if (m_pMediaPtr)
+    {
+        m_pMediaPtr->setVolume(iVoice);
+    }
+
+    *pResult = 0;
 }

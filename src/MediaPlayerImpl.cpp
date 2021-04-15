@@ -278,6 +278,24 @@ bool CMediaPlayerImpl::backward()
     return true;
 }
 
+bool CMediaPlayerImpl::setVolume(const int volume)
+{
+    if (nullptr == _fmt_ctx || nullptr == _audio_stream)
+    {
+        log_msg_warn("There is no opened file ...");
+        return false;
+    }
+
+    if (volume <= 0)
+        _volume = 0;
+    else if (volume >= 128)
+        _volume = 128;
+    else
+        _volume = volume;
+
+    return true;
+}
+
 AVCodecContext * CMediaPlayerImpl::createDecoder(int stream_index)
 {
     if (nullptr == _fmt_ctx)
@@ -720,6 +738,7 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
         _audio_info->chunk = (uint8_t *)out_buff;
         _audio_info->len = out_buff_size;
         _audio_info->pos = _audio_info->chunk;
+        _audio_info->volume = _volume.load();
         SDL_PauseAudio(0);
 
         av_packet_unref(&pkt);

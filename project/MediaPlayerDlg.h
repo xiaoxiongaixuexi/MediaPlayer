@@ -16,66 +16,70 @@ class CMediaPlayerDlg : public CDialogEx
 {
 // 构造
 public:
-	CMediaPlayerDlg(CWnd* pParent = nullptr);	// 标准构造函数
+    CMediaPlayerDlg(CWnd * pParent = nullptr);   // 标准构造函数
 
 // 对话框数据
 #ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_DLG_PLAYER };
+    enum { IDD = IDD_DLG_PLAYER };
 #endif
 
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
+protected:
+    virtual void DoDataExchange(CDataExchange * pDX);    // DDX/DDV 支持
 
 
 // 实现
 protected:
-	HICON m_hIcon;
+    HICON m_hIcon;
 
-	// 生成的消息映射函数
-	virtual BOOL OnInitDialog();
-	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
-	afx_msg void OnPaint();
-	afx_msg HCURSOR OnQueryDragIcon();
-	DECLARE_MESSAGE_MAP()
+    // 生成的消息映射函数
+    virtual BOOL OnInitDialog();
+    afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
+    afx_msg void OnPaint();
+    afx_msg HCURSOR OnQueryDragIcon();
+    DECLARE_MESSAGE_MAP()
 public:
-	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+    afx_msg HBRUSH OnCtlColor(CDC * pDC, CWnd * pWnd, UINT nCtlColor);
 private:
-	CBrush m_brush;
-	CFont m_fontSize;     // 字体大小
-	CListCtrl m_lstRecord;
-	CButton m_btnCtrl;
-	CButton m_btnStop;
-	CButton m_btnForward;
-	CButton m_btnBackward;
-	CButton m_btnOpen;
+    CBrush m_brush;
+    CFont m_fontSize;     // 字体大小
+    CListCtrl m_lstRecord;
+    CButton m_btnCtrl;
+    CButton m_btnStop;
+    CButton m_btnForward;
+    CButton m_btnBackward;
+    CButton m_btnOpen;
 
-	HICON m_icoStart;      // 开始
-	HICON m_icoPause;	   // 暂停
-	HICON m_icoStop;
-	HICON m_icoForward;
-	HICON m_icoBackward;
-	HICON m_icoLast;
-	HICON m_icoNext;
-	HICON m_icoVoice;
-	HICON m_icoSilence;
-	HICON m_icoOpen;
-	CToolTipCtrl m_toolTip;
+    HICON m_icoStart;      // 开始
+    HICON m_icoPause;      // 暂停
+    HICON m_icoStop;
+    HICON m_icoForward;
+    HICON m_icoBackward;
+    HICON m_icoLast;
+    HICON m_icoNext;
+    HICON m_icoVoice;
+    HICON m_icoSilence;
+    HICON m_icoOpen;
+    CToolTipCtrl m_toolTip;
 public:
-	afx_msg void OnBnClickedBtnCtrl();
-	afx_msg void OnBnClickedBtnStop();
-	afx_msg void OnBnClickedBtnForward();
-	afx_msg void OnBnClickedBtnBackward();
-	afx_msg void OnBnClickedBtnOpen();
+    afx_msg void OnBnClickedBtnCtrl();
+    afx_msg void OnBnClickedBtnStop();
+    afx_msg void OnBnClickedBtnForward();
+    afx_msg void OnBnClickedBtnBackward();
+    afx_msg void OnBnClickedBtnOpen();
     afx_msg void OnBnClickedBtnLast();
     afx_msg void OnBnClickedBtnNext();
-	afx_msg void OnBnClickedBtnVoice();
-	virtual BOOL PreTranslateMessage(MSG * pMsg);
+    afx_msg void OnBnClickedBtnVoice();
+    virtual BOOL PreTranslateMessage(MSG * pMsg);
 private:
-	CStatic m_stcDuration;
-	CButton m_btnLast;
-	CButton m_btnNext;
-	CButton m_btnVoice;
-	CMediaPlayerImpl * m_pMediaPtr = nullptr;
-	// 文件路径
-	std::string m_strFilePath = "";
+    CStatic m_stcDuration;
+    CButton m_btnLast;
+    CButton m_btnNext;
+    CButton m_btnVoice;
+    CMediaPlayerImpl * m_pMediaPtr = nullptr;
+    // 文件路径
+    std::string m_strFilePath = "";
+    CSliderCtrl m_sldProgress;
+    CSliderCtrl m_sldVoice;
+public:
+    afx_msg void OnNMCustomdrawSldVoice(NMHDR * pNMHDR, LRESULT * pResult);
 };
