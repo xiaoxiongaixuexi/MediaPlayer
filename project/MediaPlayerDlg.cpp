@@ -303,13 +303,19 @@ void CMediaPlayerDlg::OnBnClickedBtnStop()
 
 void CMediaPlayerDlg::OnBnClickedBtnForward()
 {
-    // TODO: 在此添加控件通知处理程序代码
+    if (m_pMediaPtr)
+    {
+        m_pMediaPtr->forward();
+    }
 }
 
 
 void CMediaPlayerDlg::OnBnClickedBtnBackward()
 {
-    // TODO: 在此添加控件通知处理程序代码
+    if (m_pMediaPtr)
+    {
+        m_pMediaPtr->backward();
+    }
 }
 
 
