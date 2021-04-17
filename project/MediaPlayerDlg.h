@@ -82,4 +82,5 @@ private:
     CSliderCtrl m_sldVoice;
 public:
     afx_msg void OnNMCustomdrawSldVoice(NMHDR * pNMHDR, LRESULT * pResult);
+    afx_msg void OnNMReleasedcaptureSldProgress(NMHDR * pNMHDR, LRESULT * pResult);
 };

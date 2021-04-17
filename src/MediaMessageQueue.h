@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -42,6 +42,12 @@ public:
         _queue.pop_front();
 
         return true;
+    }
+
+    void clear()
+    {
+        std::unique_lock<std::mutex> lock(_mutex);
+        _queue.clear();
     }
 
     bool empty()

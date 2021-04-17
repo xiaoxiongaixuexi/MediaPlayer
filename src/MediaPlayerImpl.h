@@ -60,10 +60,13 @@ public:
     void close();
 
     // 获取文件时长
-    int64_t getVideoDuration();
+    int64_t getDuration();
 
     // 获取当前播放位置
-    int64_t getVideoPos();
+    int64_t getPosition();
+
+    // 设置播放位置
+    bool setPosition(int pos);
 
     // 开始播放
     bool start(const void * wnd, int width, int height);
@@ -133,6 +136,10 @@ private:
     std::atomic_bool _is_playing = { false };
     // 是否暂停中
     std::atomic_bool _is_pause = { false };
+    // 是否跳转播放位置
+    std::atomic_bool _is_skip = { false };
+    // 当前播放位置
+    std::atomic_int32_t _cur_pos = { 0 };
 
     // 数据包线程锁
     std::mutex _packets_mtx;
@@ -209,6 +216,8 @@ private:
 
     // 音频音量
     std::atomic_int _volume = { 64 };
+    // 文件时长
+    std::atomic_int64_t _duration = { -1 };
     // 播放倍速 默认正常倍速
     MEDIA_PLAYER_SPEED _speed = MEDIA_PLAYER_SPEED_NORMAL;
 };

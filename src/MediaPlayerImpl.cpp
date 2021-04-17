@@ -80,7 +80,10 @@ bool CMediaPlayerImpl::open(const char * url)
             _audio_index.emplace_back(i);
     }
 
-    _video_stream = _fmt_ctx->streams[_video_index];
+    if (_video_index >= 0)
+    {
+        _video_stream = _fmt_ctx->streams[_video_index];
+    }
     if (!_audio_index.empty())
     {
         _audio_cur_index = _audio_index.front();
@@ -136,7 +139,7 @@ void CMediaPlayerImpl::close()
     _audio_index.clear();
 }
 
-int64_t CMediaPlayerImpl::getVideoDuration()
+int64_t CMediaPlayerImpl::getDuration()
 {
     if (nullptr == _fmt_ctx)
     {
@@ -150,12 +153,49 @@ int64_t CMediaPlayerImpl::getVideoDuration()
         return -1;
     }
 
-    return static_cast<int64_t>(static_cast<double>(_video_stream->duration) * av_q2d(_video_stream->time_base));
+    if (_duration > 0)
+        return _duration.load();
+
+    std::string str;
+    int64_t total_second = -1;
+    if (_video_stream->duration > 0)
+        total_second = static_cast<int64_t>(static_cast<double>(_video_stream->duration) * av_q2d(_video_stream->time_base));
+    else
+    {
+        AVDictionaryEntry * entry = nullptr;
+        while (entry = av_dict_get(_video_stream->metadata, "", entry, AV_DICT_IGNORE_SUFFIX))
+        {
+            if (0 == _strnicmp(entry->key, "duration", strlen("duration")))
+            {
+                str = entry->value;
+                break;
+            }
+        }
+    }
+    if (!str.empty() && total_second < 0)
+    {
+        int hour = 0;
+        int minute = 0;
+        int second = 0;
+        if (3 == sscanf(str.c_str(), "%d:%d:%d", &hour, &minute, &second))
+        {
+            total_second = static_cast<int64_t>(hour) * 3600 + static_cast<int64_t>(minute) * 60 + static_cast<int64_t>(second);
+        }
+    }
+
+    _duration = total_second;
+
+    return total_second;
 }
 
-int64_t CMediaPlayerImpl::getVideoPos()
+int64_t CMediaPlayerImpl::getPosition()
 {
     return 0;
+}
+
+bool CMediaPlayerImpl::setPosition(int pos)
+{
+    return true;
 }
 
 bool CMediaPlayerImpl::start(const void * wnd, int width, int height)

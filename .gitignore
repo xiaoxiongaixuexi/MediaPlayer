@@ -16,3 +16,14 @@ out/
 project/vs/readme/
 CMakeSettings.json
 bin/
+project/obj/x64/Debug/MediaPlayer.exe.recipe
+project/obj/x64/Debug/MediaPlayer.obj
+project/obj/x64/Debug/MediaPlayer.pch
+project/obj/x64/Debug/MediaPlayer.res
+project/obj/x64/Debug/MediaPlayerDlg.obj
+project/obj/x64/Debug/MediaPlayerImpl.obj
+project/obj/x64/Debug/MediaPlayerRescaler.obj
+project/obj/x64/Debug/MediaPlayerUtils.obj
+project/obj/x64/Debug/pch.obj
+project/obj/x64/Debug/vc142.idb
+project/obj/x64/Debug/vc142.pdb

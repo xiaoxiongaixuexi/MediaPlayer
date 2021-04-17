@@ -6,7 +6,9 @@
 #include "framework.h"
 #include "MediaPlayer.h"
 #include "MediaPlayerDlg.h"
+#include "libos.h"
 #include "afxdialogex.h"
+#include <io.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -87,6 +89,7 @@ BEGIN_MESSAGE_MAP(CMediaPlayerDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BTN_NEXT, &CMediaPlayerDlg::OnBnClickedBtnNext)
     ON_BN_CLICKED(IDC_BTN_VOICE, &CMediaPlayerDlg::OnBnClickedBtnVoice)
     ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLD_VOICE, &CMediaPlayerDlg::OnNMCustomdrawSldVoice)
+    ON_NOTIFY(NM_RELEASEDCAPTURE, IDC_SLD_PROGRESS, &CMediaPlayerDlg::OnNMReleasedcaptureSldProgress)
 END_MESSAGE_MAP()
 
 
@@ -122,6 +125,12 @@ BOOL CMediaPlayerDlg::OnInitDialog()
     SetIcon(m_hIcon, FALSE);        // 设置小图标
 
     // TODO: 在此添加额外的初始化代码
+    const char * log_name = "MediaPlayer.log";
+    if (0 == _access(log_name, 0))
+        remove(log_name);
+    log_msg_init(log_name, LOG_LEVEL_INFO);
+    atexit(log_msg_uninit);
+
     m_toolTip.Create(this);
     m_toolTip.SetDelayTime(TTDT_INITIAL, 10);
     m_toolTip.SetDelayTime(TTDT_AUTOPOP, 30000);
@@ -274,10 +283,6 @@ void CMediaPlayerDlg::OnBnClickedBtnCtrl()
             return;
         }
         m_btnCtrl.SetIcon(m_icoStart);
-
-        int64_t duration = m_pMediaPtr->getVideoDuration();
-        int a = 0;
-
     }
     else
     {
@@ -352,7 +357,7 @@ void CMediaPlayerDlg::OnBnClickedBtnOpen()
             return;
         }
 
-        int64_t duration = m_pMediaPtr->getVideoDuration();
+        int64_t duration = m_pMediaPtr->getDuration();
         if (duration <= 0)
         {
             MessageBox(_T("获取文件时长失败！"), _T("提示"), MB_OK | MB_ICONWARNING);
@@ -364,6 +369,8 @@ void CMediaPlayerDlg::OnBnClickedBtnOpen()
         CString strVideoDuration;
         strVideoDuration.Format(_T("00:00:00/%02d:%02d:%02d"), hour, minute, second);
         m_stcDuration.SetWindowText(strVideoDuration);
+        m_sldProgress.SetRange(0, static_cast<int>(duration));
+        m_sldProgress.SetTicFreq(1);
     }
 }
 
@@ -433,6 +440,16 @@ void CMediaPlayerDlg::OnNMCustomdrawSldVoice(NMHDR * pNMHDR, LRESULT * pResult)
     {
         m_pMediaPtr->setVolume(iVoice);
     }
+
+    *pResult = 0;
+}
+
+
+void CMediaPlayerDlg::OnNMReleasedcaptureSldProgress(NMHDR * pNMHDR, LRESULT * pResult)
+{
+    // TODO: 在此添加控件通知处理程序代码
+    int iPos = m_sldProgress.GetPos();
+
 
     *pResult = 0;
 }
