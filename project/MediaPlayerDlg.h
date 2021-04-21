@@ -83,4 +83,6 @@ private:
 public:
     afx_msg void OnNMCustomdrawSldVoice(NMHDR * pNMHDR, LRESULT * pResult);
     afx_msg void OnNMReleasedcaptureSldProgress(NMHDR * pNMHDR, LRESULT * pResult);
+    afx_msg void OnTimer(UINT_PTR nIDEvent);
+    void strTime(int64_t duration, int64_t ts, CString & str);
 };

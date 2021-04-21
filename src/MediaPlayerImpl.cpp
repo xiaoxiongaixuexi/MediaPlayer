@@ -153,48 +153,25 @@ int64_t CMediaPlayerImpl::getDuration()
         return -1;
     }
 
-    if (_duration > 0)
-        return _duration.load();
-
-    std::string str;
-    int64_t total_second = -1;
-    if (_video_stream->duration > 0)
-        total_second = static_cast<int64_t>(static_cast<double>(_video_stream->duration) * av_q2d(_video_stream->time_base));
-    else
-    {
-        AVDictionaryEntry * entry = nullptr;
-        while (entry = av_dict_get(_video_stream->metadata, "", entry, AV_DICT_IGNORE_SUFFIX))
-        {
-            if (0 == _strnicmp(entry->key, "duration", strlen("duration")))
-            {
-                str = entry->value;
-                break;
-            }
-        }
-    }
-    if (!str.empty() && total_second < 0)
-    {
-        int hour = 0;
-        int minute = 0;
-        int second = 0;
-        if (3 == sscanf(str.c_str(), "%d:%d:%d", &hour, &minute, &second))
-        {
-            total_second = static_cast<int64_t>(hour) * 3600 + static_cast<int64_t>(minute) * 60 + static_cast<int64_t>(second);
-        }
-    }
-
-    _duration = total_second;
-
-    return total_second;
+    return static_cast<int64_t>(_fmt_ctx->duration * av_q2d(av_make_q(1, AV_TIME_BASE)));
 }
 
 int64_t CMediaPlayerImpl::getPosition()
 {
-    return 0;
+    return static_cast<int64_t>(ceil(_audio_clock));
 }
 
 bool CMediaPlayerImpl::setPosition(int pos)
 {
+    if (nullptr == _fmt_ctx)
+    {
+        log_msg_warn("No opened faile!");
+        return false;
+    }
+
+    _cur_pos = pos;
+    _is_skip = true;
+
     return true;
 }
 
@@ -617,6 +594,22 @@ void CMediaPlayerImpl::recvPacketsThr()
             _video_cond.notify_one();
             _audio_cond.notify_one();
             continue;
+        }
+
+        if (_is_skip)
+        {
+            int64_t ts = static_cast<int64_t>(_cur_pos.load()) * AV_TIME_BASE;
+            int ret = av_seek_frame(_fmt_ctx, -1, ts, AVSEEK_FLAG_ANY);
+            if (ret < 0)
+            {
+                char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+                av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
+                log_msg_warn("%s", buff);
+                break;
+            }
+            _video_queue.clear();
+            _audio_queue.clear();
+            _is_skip = false;
         }
 
         if (_video_queue.size() > 500 || _audio_queue.size() > 500)

@@ -90,6 +90,7 @@ BEGIN_MESSAGE_MAP(CMediaPlayerDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BTN_VOICE, &CMediaPlayerDlg::OnBnClickedBtnVoice)
     ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLD_VOICE, &CMediaPlayerDlg::OnNMCustomdrawSldVoice)
     ON_NOTIFY(NM_RELEASEDCAPTURE, IDC_SLD_PROGRESS, &CMediaPlayerDlg::OnNMReleasedcaptureSldProgress)
+    ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -363,14 +364,14 @@ void CMediaPlayerDlg::OnBnClickedBtnOpen()
             MessageBox(_T("获取文件时长失败！"), _T("提示"), MB_OK | MB_ICONWARNING);
             return;
         }
-        int hour = static_cast<int>(duration / 3600);
-        int minute = static_cast<int>(duration / 60 % 60);
-        int second = static_cast<int>(duration % 60);
+
         CString strVideoDuration;
-        strVideoDuration.Format(_T("00:00:00/%02d:%02d:%02d"), hour, minute, second);
+        strTime(duration, 0, strVideoDuration);
         m_stcDuration.SetWindowText(strVideoDuration);
         m_sldProgress.SetRange(0, static_cast<int>(duration));
         m_sldProgress.SetTicFreq(1);
+
+        SetTimer(1, 100, nullptr);
     }
 }
 
@@ -449,7 +450,40 @@ void CMediaPlayerDlg::OnNMReleasedcaptureSldProgress(NMHDR * pNMHDR, LRESULT * p
 {
     // TODO: 在此添加控件通知处理程序代码
     int iPos = m_sldProgress.GetPos();
-
+    if (m_pMediaPtr)
+    {
+        m_pMediaPtr->setPosition(iPos);
+    }
 
     *pResult = 0;
+}
+
+
+void CMediaPlayerDlg::OnTimer(UINT_PTR nIDEvent)
+{
+    if (nIDEvent == 1)
+    {
+        if (m_pMediaPtr)
+        {
+            int64_t pos = m_pMediaPtr->getPosition();
+            int64_t duration = m_pMediaPtr->getDuration();
+            m_sldProgress.SetPos(static_cast<int>(pos));
+            CString strVideoDuration;
+            strTime(duration, pos, strVideoDuration);
+            m_stcDuration.SetWindowText(strVideoDuration);
+        }
+    }
+
+    CDialogEx::OnTimer(nIDEvent);
+}
+
+void CMediaPlayerDlg::strTime(int64_t duration, int64_t ts, CString & str)
+{
+    int d_hour = static_cast<int>(duration / 3600);
+    int d_minute = static_cast<int>(duration / 60 % 60);
+    int d_second = static_cast<int>(duration % 60);
+    int t_hour = static_cast<int>(ts / 3600);
+    int t_minute = static_cast<int>(ts / 60 % 60);
+    int t_second = static_cast<int>(ts % 60);
+    str.Format(_T("%02d:%02d:%02d/%02d:%02d:%02d"), t_hour, t_minute, t_second, d_hour, d_minute, d_second);
 }
