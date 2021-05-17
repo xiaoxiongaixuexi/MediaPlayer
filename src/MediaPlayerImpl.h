@@ -174,7 +174,7 @@ private:
     // 音频解码器
     AVCodecContext * _audio_decoder = nullptr;
     // 音频时钟
-    double _audio_clock = 0.0;
+    std::atomic<double> _audio_clock = { 0.0 };
 
     // 视频像素格式
     AVPixelFormat _pix_fmt = AVPixelFormat::AV_PIX_FMT_NONE;

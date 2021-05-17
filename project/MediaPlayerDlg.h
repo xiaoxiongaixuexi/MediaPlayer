@@ -7,9 +7,9 @@
 #include <string>
 #include "../src/MediaPlayerImpl.h"
 
-#define BACK_COLOR RGB(16, 16, 16) // 背景颜色
-#define FONT_COLOR RGB(255, 255, 255)
-#define GAP_SIZE   10              // 图标缝隙
+#define BACK_COLOR RGB(16, 16, 16)     // 背景颜色
+#define FONT_COLOR RGB(255, 255, 255)  // 字体颜色
+#define GAP_SIZE   10                  // 图标缝隙
 
 // CMediaPlayerDlg 对话框
 class CMediaPlayerDlg : public CDialogEx

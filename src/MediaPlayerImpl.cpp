@@ -137,6 +137,9 @@ void CMediaPlayerImpl::close()
     SDL_Quit();
 
     _audio_index.clear();
+    _is_playing = false;
+    _cur_pos = 0;
+    _audio_clock = 0.0;
 }
 
 int64_t CMediaPlayerImpl::getDuration()
@@ -538,7 +541,13 @@ bool CMediaPlayerImpl::createAudioPlayer()
 
 void CMediaPlayerImpl::destoryAudioPlayer()
 {
+    SDL_CloseAudio();
 
+    if (_audio_info)
+    {
+        free(_audio_info);
+        _audio_info = nullptr;
+    }
 }
 
 bool CMediaPlayerImpl::createAudioRescaler()
@@ -572,7 +581,12 @@ bool CMediaPlayerImpl::createAudioRescaler()
 
 void CMediaPlayerImpl::destoryAudioRescaler()
 {
-
+    if (_audio_rescaler)
+    {
+        swr_close(_audio_rescaler);
+        swr_free(&_audio_rescaler);
+        _audio_rescaler = nullptr;
+    }
 }
 
 void CMediaPlayerImpl::recvPacketsThr()
@@ -686,7 +700,7 @@ void CMediaPlayerImpl::dealVideoPacketsThr()
         double pts = frm->best_effort_timestamp == AV_NOPTS_VALUE ? 0.0 : frm->best_effort_timestamp;
         pts = static_cast<double>(pts) * av_q2d(_video_stream->time_base);
         double delay = pts - _audio_clock;
-        if (delay > 0)
+        if (delay > pow(0.1, 15.0))
             std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(delay * 1000)));
 
         AVFrame yuv_frm = { 0 };
