@@ -178,7 +178,7 @@ bool CMediaPlayerImpl::setPosition(int pos)
     return true;
 }
 
-bool CMediaPlayerImpl::start(const void * wnd, int width, int height)
+bool CMediaPlayerImpl::start(const void * wnd, const int width, const int height)
 {
     if (nullptr == wnd)
     {
@@ -311,7 +311,7 @@ bool CMediaPlayerImpl::setVolume(const int volume)
     return true;
 }
 
-AVCodecContext * CMediaPlayerImpl::createDecoder(int stream_index)
+AVCodecContext * CMediaPlayerImpl::createDecoder(const int stream_index)
 {
     if (nullptr == _fmt_ctx)
     {
@@ -380,77 +380,45 @@ void CMediaPlayerImpl::destoryDecoder(AVCodecContext ** decoder)
     }
 }
 
-bool CMediaPlayerImpl::decodeVideoPacket(const AVPacket * pkt, AVFrame * frm, bool * got)
+bool CMediaPlayerImpl::decodePacket(AVCodecContext * decoder, const AVPacket * pkt, std::vector<AVFrame> & frms)
 {
-    if (nullptr == pkt || nullptr == frm || nullptr == _video_decoder)
+    if (nullptr == decoder)
     {
-        log_msg_warn("Input param is nullptr!");
+        log_msg_warn("Input decoder is nullptr");
         return false;
     }
 
-    int ret = avcodec_send_packet(_video_decoder, pkt);
+    int ret = avcodec_send_packet(decoder, pkt);
     if (ret < 0)
     {
         char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
         av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-        log_msg_warn("avcodec_send_packet failed, err:%s", buff);
+        log_msg_warn("avcodec_send_packet failed, err code: %d msg: %s", ret, buff);
         return false;
     }
-    ret = avcodec_receive_frame(_video_decoder, frm);
-    if (ret < 0)
+
+    while (true)
     {
-        if (ret == AVERROR(EAGAIN))
+        AVFrame frm = { };
+        ret = avcodec_receive_frame(decoder, &frm);
+        if (ret < 0)
         {
-            *got = false;
-            return true;
-        }
-        char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-        av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-        log_msg_warn("avcodec_receive_frame failed, err:%s", buff);
-        return false;
-    }
+            if (ret == AVERROR(EAGAIN))
+                break;
 
-    *got = true;
+            char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+            av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
+            log_msg_warn("avcodec_receive_frame failed, err code: %d msg: %s", ret, buff);
+            return false;
+        }
+
+        frms.emplace_back(frm);
+    }
 
     return true;
 }
 
-bool CMediaPlayerImpl::decodeAudioPacket(const AVPacket * pkt, AVFrame * frm, bool * got)
-{
-    if (nullptr == pkt || nullptr == frm || nullptr == _audio_decoder)
-    {
-        log_msg_warn("Input param is nullptr!");
-        return false;
-    }
-
-    int ret = avcodec_send_packet(_audio_decoder, pkt);
-    if (ret < 0)
-    {
-        char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-        av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-        log_msg_warn("avcodec_send_packet failed, err:%s", buff);
-        return false;
-    }
-    ret = avcodec_receive_frame(_audio_decoder, frm);
-    if (ret < 0)
-    {
-        if (ret == AVERROR(EAGAIN))
-        {
-            *got = false;
-            return true;
-        }
-        char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-        av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-        log_msg_warn("avcodec_receive_frame failed, err:%s", buff);
-        return false;
-    }
-
-    *got = true;
-
-    return true;
-}
-
-bool CMediaPlayerImpl::createVideoPlayer(const void * wnd, int width, int height)
+bool CMediaPlayerImpl::createVideoPlayer(const void * wnd, const int width, const int height)
 {
     if (nullptr == wnd)
     {
@@ -661,13 +629,6 @@ void CMediaPlayerImpl::dealVideoPacketsThr()
         return;
     }
 
-    AVFrame * frm = av_frame_alloc();
-    if (nullptr == frm)
-    {
-        log_msg_warn("av_frame_alloc failed!");
-        return;
-    }
-
     while (_is_init)
     {
         // 没在播放中
@@ -678,53 +639,63 @@ void CMediaPlayerImpl::dealVideoPacketsThr()
         }
 
         // 播放视频
-        AVPacket pkt;
-        if (!_video_queue.pop(pkt))
+        bool is_succ = false;
+        std::vector<AVFrame> frms;
+
+        if (_is_over && _video_queue.empty())
         {
-            continue;
+            is_succ = decodePacket(_video_decoder, nullptr, frms);
+        }
+        else
+        {
+            AVPacket pkt;
+            if (!_video_queue.pop(pkt))
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
+            }
+            is_succ = decodePacket(_video_decoder, &pkt, frms);
+            av_packet_unref(&pkt);
         }
 
-        bool got = false;
-        if (!decodeVideoPacket(&pkt, frm, &got))
+        if (!is_succ)
         {
-            log_msg_warn("decodeVideoPacket failed!");
-            av_packet_unref(&pkt);
+            log_msg_warn("decode video packet failed!");
             break;
         }
-        if (!got)
+
+        for (auto & frm : frms)
         {
-            av_packet_unref(&pkt);
-            continue;
+            double pts = frm.best_effort_timestamp == AV_NOPTS_VALUE ? 0.0 : frm.best_effort_timestamp;
+            pts = static_cast<double>(pts) * av_q2d(_video_stream->time_base);
+            double delay = pts - _audio_clock;
+            if (delay > pow(0.1, 15.0))
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(delay * 1000)));
+
+            AVFrame yuv_frm = { 0 };
+            if (!_rescaler->rescale(&frm, &yuv_frm))
+            {
+                log_msg_warn("rescale failed!");
+                continue;
+            }
+
+            SDL_UpdateYUVTexture(_sdl_texture, &_sdl_rect,
+                                 yuv_frm.data[0],
+                                 yuv_frm.linesize[0],
+                                 yuv_frm.data[1],
+                                 yuv_frm.linesize[1],
+                                 yuv_frm.data[2],
+                                 yuv_frm.linesize[2]);
+
+            _sdl_rect = { 0, 0, _wnd_width, _wnd_height };
+
+            SDL_RenderClear(_sdl_render);
+            SDL_RenderCopy(_sdl_render, _sdl_texture, nullptr, &_sdl_rect);
+            SDL_RenderPresent(_sdl_render);
         }
 
-        double pts = frm->best_effort_timestamp == AV_NOPTS_VALUE ? 0.0 : frm->best_effort_timestamp;
-        pts = static_cast<double>(pts) * av_q2d(_video_stream->time_base);
-        double delay = pts - _audio_clock;
-        if (delay > pow(0.1, 15.0))
-            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(delay * 1000)));
-
-        AVFrame yuv_frm = { 0 };
-        if (!_rescaler->rescale(frm, &yuv_frm))
-        {
-            log_msg_warn("rescale failed!");
-            av_packet_unref(&pkt);
-            continue;
-        }
-
-        SDL_UpdateYUVTexture(_sdl_texture, &_sdl_rect,
-                             yuv_frm.data[0],
-                             yuv_frm.linesize[0],
-                             yuv_frm.data[1],
-                             yuv_frm.linesize[1],
-                             yuv_frm.data[2],
-                             yuv_frm.linesize[2]);
-
-        _sdl_rect = { 0, 0, _wnd_width, _wnd_height };
-
-        SDL_RenderClear(_sdl_render);
-        SDL_RenderCopy(_sdl_render, _sdl_texture, nullptr, &_sdl_rect);
-        SDL_RenderPresent(_sdl_render);
-        av_packet_unref(&pkt);
+        frms.erase(frms.begin(), frms.end());
+        frms.clear();
     }
 }
 
@@ -737,13 +708,6 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
                                                    1024, AV_SAMPLE_FMT_S16, 64);
     uint8_t * out_buff = (uint8_t *)av_malloc(192000 * 2);
 
-    AVFrame * frm = av_frame_alloc();
-    if (nullptr == frm)
-    {
-        log_msg_warn("av_frame_alloc failed!");
-        return;
-    }
-
     while (_is_init)
     {
         // 没在播放中
@@ -752,40 +716,50 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
             continue;
         }
 
-        // 播放视频
-        AVPacket pkt;
-        if (!_audio_queue.pop(pkt))
+        // 播放音频
+        bool is_succ = false;
+        std::vector<AVFrame> frms;
+
+        if (_is_over && _audio_queue.empty())
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
-            continue;
+            is_succ = decodePacket(_audio_decoder, nullptr, frms);
+        }
+        else
+        {
+            AVPacket pkt;
+            if (!_audio_queue.pop(pkt) && _is_over)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
+            }
+            is_succ = decodePacket(_audio_decoder, &pkt, frms);
+            av_packet_unref(&pkt);
         }
 
-        bool got = false;
-
-        if (!decodeAudioPacket(&pkt, frm, &got))
+        if (!is_succ)
         {
-            log_msg_warn("decodeAudioPacket failed!");
+            log_msg_warn("decode audio packet failed!");
             break;
         }
-        if (!got)
+
+        for (auto & frm : frms)
         {
-            av_packet_unref(&pkt);
-            continue;
+            if (frm.best_effort_timestamp != AV_NOPTS_VALUE)
+                _audio_clock = static_cast<double>(frm.best_effort_timestamp) * av_q2d(_audio_stream->time_base);
+
+            swr_convert(_audio_rescaler, &out_buff, 192000, (const uint8_t **)(frm.data), frm.nb_samples);
+            _audio_info->chunk = (uint8_t *)out_buff;
+            _audio_info->len = out_buff_size;
+            _audio_info->pos = _audio_info->chunk;
+            _audio_info->volume = _volume.load();
+            SDL_PauseAudio(0);
+
+            while (_audio_info->len > 0)
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 
-        if (frm->best_effort_timestamp != AV_NOPTS_VALUE)
-            _audio_clock = static_cast<double>(frm->best_effort_timestamp) * av_q2d(_audio_stream->time_base);
-
-        swr_convert(_audio_rescaler, &out_buff, 192000, (const uint8_t **)(frm->data), frm->nb_samples);
-        _audio_info->chunk = (uint8_t *)out_buff;
-        _audio_info->len = out_buff_size;
-        _audio_info->pos = _audio_info->chunk;
-        _audio_info->volume = _volume.load();
-        SDL_PauseAudio(0);
-
-        av_packet_unref(&pkt);
-        while (_audio_info->len > 0)
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        frms.erase(frms.begin(), frms.end());
+        frms.clear();
     }
 }
 

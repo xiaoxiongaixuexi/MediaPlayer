@@ -90,11 +90,8 @@ protected:
     // 销毁解码器
     void destoryDecoder(AVCodecContext ** decoder);
 
-    // 视频帧解码
-    bool decodeVideoPacket(const AVPacket * pkt, AVFrame * frm, bool * got);
-
-    // 音频帧解码
-    bool decodeAudioPacket(const AVPacket * pkt, AVFrame * frm, bool * got);
+    // 解码
+    bool decodePacket(AVCodecContext * decoder, const AVPacket * pkt, std::vector<AVFrame> & frms);
 
     // 创建视频播放器
     bool createVideoPlayer(const void * wnd, int width, int height);
