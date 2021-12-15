@@ -16,6 +16,12 @@
     <Filter Include="源文件\src">
       <UniqueIdentifier>{428eff15-f409-4ddf-88b0-add175428399}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\src\decoder">
+      <UniqueIdentifier>{003a1519-00ab-44e8-a842-a660c0b2b073}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\src\rescaler">
+      <UniqueIdentifier>{887ca29b-7ad5-4743-8d53-d4296b637b90}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MediaPlayer.h">
@@ -36,14 +42,20 @@
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\MediaPlayerImpl.h">
+    <ClInclude Include="..\..\src\MediaMessageQueue.h">
       <Filter>源文件\src</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\MediaMessageQueue.h">
+    <ClInclude Include="..\..\src\MediaPlayerImpl.h">
       <Filter>源文件\src</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\MediaPlayerRescaler.h">
-      <Filter>源文件\src</Filter>
+    <ClInclude Include="..\..\src\decoder\MediaPlayerDecoderImpl.h">
+      <Filter>源文件\src\decoder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rescaler\AudioRescalerImpl.h">
+      <Filter>源文件\src\rescaler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rescaler\VideoRescalerImpl.h">
+      <Filter>源文件\src\rescaler</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -56,11 +68,17 @@
     <ClCompile Include="pch.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\MediaPlayerImpl.cpp">
+    <ClCompile Include="..\..\src\MediaPlayerImpl.cpp">
       <Filter>源文件\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\MediaPlayerRescaler.cpp">
-      <Filter>源文件\src</Filter>
+    <ClCompile Include="..\..\src\decoder\MediaPlayerDecoderImpl.cpp">
+      <Filter>源文件\src\decoder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rescaler\AudioRescalerImpl.cpp">
+      <Filter>源文件\src\rescaler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rescaler\VideoRescalerImpl.cpp">
+      <Filter>源文件\src\rescaler</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

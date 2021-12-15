@@ -8,7 +8,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MediaPlayer", "MediaPlayer.
 		{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB} = {0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libos", "..\..\libos\project\win\libos.vcxproj", "{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libos", "..\..\..\libos\project\win\libos.vcxproj", "{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

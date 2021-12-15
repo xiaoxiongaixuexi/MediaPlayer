@@ -333,8 +333,8 @@ void CMediaPlayerDlg::OnBnClickedBtnOpen()
         return;
     }
 
-    CString strExtFilter = _T("MP4|*.mp4|MKV|*.mkv|All Files|*.*||");
-    CFileDialog dlg(TRUE, _T("MP4"), nullptr, OFN_READONLY | OFN_FILEMUSTEXIST, strExtFilter);
+    CString strExtFilter = _T("MKV|*.mkv|MP4|*.mp4|All Files|*.*||");
+    CFileDialog dlg(TRUE, _T("MKV"), nullptr, OFN_READONLY | OFN_FILEMUSTEXIST, strExtFilter);
     if (IDOK == dlg.DoModal())
     {
         CString strFilePath = dlg.GetPathName();

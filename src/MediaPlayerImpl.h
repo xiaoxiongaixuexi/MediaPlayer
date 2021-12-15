@@ -11,17 +11,10 @@
 #include "MediaMessageQueue.h"
 
 #include "SDL.h"
-#ifdef __cplusplus
 extern "C" {
-#endif
-#include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
 #include "libavutil/avutil.h"
-#include "libswresample/swresample.h"
-#include "libswscale/swscale.h"
-#ifdef __cplusplus
+#include "libavformat/avformat.h"
 }
-#endif
 
 // 播放倍速
 typedef enum _MEDIA_PLAYER_SPEED
@@ -44,7 +37,9 @@ typedef struct _audio_info_t
     uint8_t * pos;
 } audio_info_t;
 
-class CMediaPlayerRescaler;
+class CVideoRescalerImpl;
+class CAudioRescalerImpl;
+class CAVDecoderImpl;
 
 class CMediaPlayerImpl
 {
@@ -84,14 +79,17 @@ public:
     bool setVolume(int volume);
 
 protected:
-    // 创建解码器
-    AVCodecContext * createDecoder(int stream_index);
+    // 初始化视频流
+    bool initVideoStream();
 
-    // 销毁解码器
-    void destoryDecoder(AVCodecContext ** decoder);
+    // 销毁视频流
+    void uninitVideoStream();
 
-    // 解码
-    bool decodePacket(AVCodecContext * decoder, const AVPacket * pkt, std::vector<AVFrame> & frms);
+    // 初始化音频流
+    bool initAudioStream();
+
+    // 销毁音频流
+    void uninitAudioStream();
 
     // 创建视频播放器
     bool createVideoPlayer(const void * wnd, int width, int height);
@@ -104,12 +102,6 @@ protected:
 
     // 销毁音频播放器
     void destoryAudioPlayer();
-
-    // 创建音频转换器
-    bool createAudioRescaler();
-
-    //销毁音频转换器
-    void destoryAudioRescaler();
 
     // 接收数据包线程
     void recvPacketsThr();
@@ -159,17 +151,27 @@ private:
     // 音频解码线程变量
     std::condition_variable _audio_cond;
 
-    // 视频流索引
-    std::atomic_int _video_index = { -1 };
+    // 视频流索引数组
+    std::vector<int> _video_index;
+    // 当前使用视频流索引
+    std::atomic_int _video_cur_index = { -1 };
+    // 视频流
+    AVStream * _video_stream = nullptr;
     // 视频解码器
-    AVCodecContext * _video_decoder = nullptr;
+    CAVDecoderImpl * _video_decoder = nullptr;
+    // 视频转换器
+    CVideoRescalerImpl * _video_rescaler = nullptr;
 
+    // 音频流索引数组
+    std::vector<int> _audio_index;
     // 当前使用音频流索引
     std::atomic_int _audio_cur_index = { -1 };
-    // 视频流索引数组
-    std::vector<int> _audio_index;
+    // 音频流
+    AVStream * _audio_stream = nullptr;
     // 音频解码器
-    AVCodecContext * _audio_decoder = nullptr;
+    CAVDecoderImpl * _audio_decoder = nullptr;
+    // 音频转换器
+    CAudioRescalerImpl * _audio_rescaler = nullptr;
     // 音频时钟
     std::atomic<double> _audio_clock = { 0.0 };
 
@@ -177,10 +179,6 @@ private:
     AVPixelFormat _pix_fmt = AVPixelFormat::AV_PIX_FMT_NONE;
     // 输入流上下文
     AVFormatContext * _fmt_ctx = nullptr;
-    // 视频流
-    AVStream * _video_stream = nullptr;
-    // 音频流
-    AVStream * _audio_stream = nullptr;
 
     // 屏幕宽度
     int _wnd_width = 0;
@@ -192,10 +190,6 @@ private:
     int _frm_height = 0;
 
     audio_info_t * _audio_info = nullptr;
-    // 视频转换器
-    CMediaPlayerRescaler * _rescaler = nullptr;
-    // 音频转换器
-    SwrContext * _audio_rescaler = nullptr;
 
     // 位置
     SDL_Rect _sdl_rect = { 0 };

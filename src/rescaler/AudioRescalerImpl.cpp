@@ -1,19 +1,18 @@
-﻿#include "MediaPlayerAudioRescaler.h"
+﻿#include "AudioRescalerImpl.h"
 #include "libos.h"
 
-#define MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio 48000 * (32/8)
+#define MAX_AUDIO_FRAME_SIZE (44100 * 32 / 8) // 1 second of 48khz 32bit audio 48000 * (32/8)
 
-bool CMediaPlayerAudioRescaler::create(int64_t out_ch_layout, AVSampleFormat out_sample_fmt, int out_sample_rate,
-                                       int64_t in_ch_layout, AVSampleFormat in_sample_fmt, int in_sample_rate, int frame_size)
+bool CAudioRescalerImpl::create(const int64_t out_layout, const AVSampleFormat out_fmt, const int out_rate,
+                                const int64_t in_layout, const AVSampleFormat in_fmt, const int in_rate, const int frame_size)
 {
-    if (out_ch_layout == in_ch_layout && out_sample_fmt == in_sample_fmt && out_sample_rate == in_sample_rate)
+    if (out_layout == in_layout && out_fmt == in_fmt && out_rate == in_rate)
     {
         _need_rescale = false;
         return true;
     }
 
-    _rescaler = swr_alloc_set_opts(nullptr, out_ch_layout, out_sample_fmt, out_sample_rate,
-                                   in_ch_layout, in_sample_fmt, in_sample_rate, 0, nullptr);
+    _rescaler = swr_alloc_set_opts(nullptr, out_layout, out_fmt, out_rate, in_layout, in_fmt, in_rate, 0, nullptr);
     if (nullptr == _rescaler)
     {
         log_msg_warn("swr_alloc_set_opts failed!");
@@ -32,48 +31,35 @@ bool CMediaPlayerAudioRescaler::create(int64_t out_ch_layout, AVSampleFormat out
         return false;
     }
 
-    int out_channels = av_get_channel_layout_nb_channels(_out_ch_layout);
-    _out_len = av_samples_get_buffer_size(nullptr, out_channels, frame_size, out_sample_fmt, 64);
+    int out_channels = av_get_channel_layout_nb_channels(out_layout);
+    _out_len = av_samples_get_buffer_size(nullptr, out_channels, frame_size, out_fmt, 1);
     if (_out_len <= 0)
     {
         log_msg_warn("av_samples_get_buffer_size failed!");
-        destory();
+        destroy();
         return false;
     }
-    _out_data = (uint8_t *)av_malloc(MAX_AUDIO_FRAME_SIZE * 2);
+    _out_data = static_cast<uint8_t *>(av_malloc(MAX_AUDIO_FRAME_SIZE * 2));
     if (nullptr == _out_data)
     {
         log_msg_error("av_malloc failed!");
-        destory();
+        destroy();
         return false;
     }
 
-    _out_ch_layout = out_ch_layout;
-    _out_sample_fmt = out_sample_fmt;
-    _out_sample_rate = out_sample_rate;
+    _out_ch_layout = out_layout;
+    _out_sample_fmt = out_fmt;
+    _out_sample_rate = out_rate;
 
     return true;
 }
 
-void CMediaPlayerAudioRescaler::destory()
+void CAudioRescalerImpl::destroy()
 {
-    if (_out_data)
-    {
-        av_free(_out_data);
-        _out_data = nullptr;
-    }
 
-    if (_rescaler)
-    {
-        swr_close(_rescaler);
-        swr_free(&_rescaler);
-        _rescaler = nullptr;
-    }
-
-    _need_rescale = false;
 }
 
-bool CMediaPlayerAudioRescaler::rescale(const AVFrame * in_frm, uint8_t ** out_data, int * out_len)
+bool CAudioRescalerImpl::rescale(const AVFrame * in_frm, uint8_t ** out_data, int * out_len)
 {
     if (nullptr == in_frm)
     {
@@ -102,12 +88,12 @@ bool CMediaPlayerAudioRescaler::rescale(const AVFrame * in_frm, uint8_t ** out_d
     }
 
     *out_data = _out_data;
-    *out_len = _out_len;
+    *out_len = ret * in_frm->channels * av_get_bytes_per_sample(_out_sample_fmt);
 
     return true;
 }
 
-void CMediaPlayerAudioRescaler::copyFrame(AVFrame * dst_frm, const AVFrame * src_frm)
+void CAudioRescalerImpl::copyFrame(AVFrame * dst_frm, const AVFrame * src_frm)
 {
     if (nullptr == src_frm || nullptr == dst_frm)
     {

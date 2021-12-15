@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <stdio.h>
 #include <stdbool.h>
 extern "C"{
@@ -8,39 +8,39 @@ extern "C"{
 class CMediaPlayerAudioRescaler
 {
 public:
-	CMediaPlayerAudioRescaler() = default;
-	~CMediaPlayerAudioRescaler() = default;
+    CMediaPlayerAudioRescaler() = default;
+    ~CMediaPlayerAudioRescaler() = default;
 
-	// ´´½¨
+    // åˆ›å»º
     bool create(int64_t out_ch_layout, AVSampleFormat out_sample_fmt, int out_sample_rate,
                 int64_t in_ch_layout, AVSampleFormat in_sample_fmt, int in_sample_rate, int frame_size);
 
-	// Ïú»Ù×ª»»Æ÷
-	void destory();
+    // é”€æ¯è½¬æ¢å™¨
+    void destory();
 
-	// ×ª»»
-	bool rescale(const AVFrame * in_frm, uint8_t ** out_data, int * out_len);
+    // è½¬æ¢
+    bool rescale(const AVFrame * in_frm, uint8_t ** out_data, int * out_len);
 
 protected:
-	// ¿½±´Êı¾İ
-	void copyFrame(AVFrame * dst_frm, const AVFrame * src_frm);
+    // æ‹·è´æ•°æ®
+    void copyFrame(AVFrame * dst_frm, const AVFrame * src_frm);
 
 private:
-	// ÊÇ·ñĞèÒª×ª»»
-	bool _need_rescale = false;
+    // æ˜¯å¦éœ€è¦è½¬æ¢
+    bool _need_rescale = false;
 
-	// Êä³öÍ¨µÀÅÅÁĞ
-	int64_t _out_ch_layout = -1;
-	// Êä³ö²ÉÑù¸ñÊ½
-	AVSampleFormat _out_sample_fmt = AV_SAMPLE_FMT_NONE;
-	// Êä³ö²ÉÑùÂÊ
-	int _out_sample_rate = 0;
-	
-	// ×ª»»Æ÷
-	SwrContext * _rescaler = nullptr;
+    // è¾“å‡ºé€šé“æ’åˆ—
+    int64_t _out_ch_layout = -1;
+    // è¾“å‡ºé‡‡æ ·æ ¼å¼
+    AVSampleFormat _out_sample_fmt = AV_SAMPLE_FMT_NONE;
+    // è¾“å‡ºé‡‡æ ·ç‡
+    int _out_sample_rate = 0;
 
-	// Êä³öÄÚÈİ
-	uint8_t * _out_data = nullptr;
-	// Êä³öÄÚÈİ³¤¶È
-	int _out_len = -1;
+    // è½¬æ¢å™¨
+    SwrContext * _rescaler = nullptr;
+
+    // è¾“å‡ºå†…å®¹
+    uint8_t * _out_data = nullptr;
+    // è¾“å‡ºå†…å®¹é•¿åº¦
+    int _out_len = -1;
 };

@@ -76,22 +76,22 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(ProjectDir)..\bin\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(ProjectDir)..\..\bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(ProjectDir)..\bin\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(ProjectDir)..\..\bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(ProjectDir)..\bin\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(ProjectDir)..\..\bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(ProjectDir)..\bin\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(ProjectDir)..\..\bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -101,13 +101,13 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\3rdparty\include\ffmpeg\;$(ProjectDir)..\..\3rdparty\include\SDL\;$(ProjectDir)..\..\libos\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\3rdparty\include\ffmpeg\;$(ProjectDir)..\..\..\3rdparty\include\SDL\;$(ProjectDir)..\..\..\libos\include\;$(ProjectDir)..\..\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp14</LanguageStandard>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\3rdparty\lib\$(PlatformTarget)\;$(ProjectDir)..\..\libos\lib\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\3rdparty\lib\$(PlatformTarget)\;$(ProjectDir)..\..\..\libos\lib\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;swscale.lib;SDL2.lib;libos.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Midl>
@@ -121,8 +121,8 @@
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>xcopy /y $(ProjectDir)..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\
-xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\</Command>
+      <Command>xcopy /y $(ProjectDir)..\..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\
+xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -132,13 +132,13 @@ xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;_DEBUG;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\3rdparty\include\ffmpeg\;$(ProjectDir)..\..\3rdparty\include\SDL\;$(ProjectDir)..\..\libos\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\3rdparty\include\ffmpeg\;$(ProjectDir)..\..\..\3rdparty\include\SDL\;$(ProjectDir)..\..\..\libos\include\;$(ProjectDir)..\..\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp14</LanguageStandard>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\3rdparty\lib\$(PlatformTarget)\;$(ProjectDir)..\..\libos\lib\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\3rdparty\lib\$(PlatformTarget)\;$(ProjectDir)..\..\..\libos\lib\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;swscale.lib;SDL2.lib;libos.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Midl>
@@ -152,8 +152,8 @@ xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>xcopy /y $(ProjectDir)..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\
-xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\</Command>
+      <Command>xcopy /y $(ProjectDir)..\..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\
+xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -165,7 +165,7 @@ xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\3rdparty\include\ffmpeg\;$(ProjectDir)..\..\3rdparty\include\SDL\;$(ProjectDir)..\..\libos\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\3rdparty\include\ffmpeg\;$(ProjectDir)..\..\..\3rdparty\include\SDL\;$(ProjectDir)..\..\..\libos\include\;$(ProjectDir)..\..\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp14</LanguageStandard>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
@@ -173,7 +173,7 @@ xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\3rdparty\lib\$(PlatformTarget)\;$(ProjectDir)..\..\libos\lib\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\3rdparty\lib\$(PlatformTarget)\;$(ProjectDir)..\..\..\libos\lib\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;swscale.lib;SDL2.lib;libos.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Midl>
@@ -187,8 +187,8 @@ xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>xcopy /y $(ProjectDir)..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\
-xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\</Command>
+      <Command>xcopy /y $(ProjectDir)..\..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\
+xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -200,7 +200,7 @@ xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;NDEBUG;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\3rdparty\include\ffmpeg\;$(ProjectDir)..\..\3rdparty\include\SDL\;$(ProjectDir)..\..\libos\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\3rdparty\include\ffmpeg\;$(ProjectDir)..\..\..\3rdparty\include\SDL\;$(ProjectDir)..\..\..\libos\include\;$(ProjectDir)..\..\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp14</LanguageStandard>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
@@ -208,7 +208,7 @@ xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\3rdparty\lib\$(PlatformTarget)\;$(ProjectDir)..\..\libos\lib\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\3rdparty\lib\$(PlatformTarget)\;$(ProjectDir)..\..\..\libos\lib\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;swscale.lib;SDL2.lib;libos.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Midl>
@@ -222,14 +222,16 @@ xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>xcopy /y $(ProjectDir)..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\
-xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\</Command>
+      <Command>xcopy /y $(ProjectDir)..\..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\
+xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\MediaPlayerImpl.h" />
-    <ClInclude Include="..\src\MediaMessageQueue.h" />
-    <ClInclude Include="..\src\MediaPlayerRescaler.h" />
+    <ClInclude Include="..\..\src\decoder\MediaPlayerDecoderImpl.h" />
+    <ClInclude Include="..\..\src\MediaMessageQueue.h" />
+    <ClInclude Include="..\..\src\MediaPlayerImpl.h" />
+    <ClInclude Include="..\..\src\rescaler\AudioRescalerImpl.h" />
+    <ClInclude Include="..\..\src\rescaler\VideoRescalerImpl.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="MediaPlayer.h" />
     <ClInclude Include="MediaPlayerDlg.h" />
@@ -238,8 +240,10 @@ xcopy /y $(ProjectDir)..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\MediaPlayerImpl.cpp" />
-    <ClCompile Include="..\src\MediaPlayerRescaler.cpp" />
+    <ClCompile Include="..\..\src\decoder\MediaPlayerDecoderImpl.cpp" />
+    <ClCompile Include="..\..\src\MediaPlayerImpl.cpp" />
+    <ClCompile Include="..\..\src\rescaler\AudioRescalerImpl.cpp" />
+    <ClCompile Include="..\..\src\rescaler\VideoRescalerImpl.cpp" />
     <ClCompile Include="MediaPlayer.cpp" />
     <ClCompile Include="MediaPlayerDlg.cpp" />
     <ClCompile Include="pch.cpp">
