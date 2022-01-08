@@ -32,9 +32,8 @@ typedef struct _audio_info_t
 {
     int volume;
     int len;
-    int index;        // 播放位置
-    uint8_t * chunk;
-    uint8_t * pos;
+    int pos;         // 播放位置
+    uint8_t * data;
 } audio_info_t;
 
 class CVideoRescalerImpl;

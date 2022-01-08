@@ -13,12 +13,11 @@ static void readAudioDataCb(void * udata, uint8_t * data, int len)
     }
 
     SDL_memset(data, 0, len);
+    int tmp_len = len;
+    if (tmp_len > audio_info->len)
+        tmp_len = audio_info->len;
 
-    len = (len > audio_info->len) ? audio_info->len : len;
-    if (len <= 0)
-        return;
-
-    SDL_MixAudio(data, audio_info->pos, len, audio_info->volume);
+    SDL_MixAudioFormat(data, audio_info->data + audio_info->pos, AUDIO_S16, len, audio_info->volume);
     audio_info->pos += len;
     audio_info->len -= len;
 }
@@ -99,6 +98,7 @@ bool CMediaPlayerImpl::open(const char * url)
         _audio_stream = _fmt_ctx->streams[_audio_cur_index.load()];
     }
 
+    _duration = static_cast<int64_t>(_fmt_ctx->duration * av_q2d(av_make_q(1, AV_TIME_BASE)));
     _is_init = true;
 
     SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO);
@@ -165,12 +165,15 @@ int64_t CMediaPlayerImpl::getDuration()
         return -1;
     }
 
-    return static_cast<int64_t>(_fmt_ctx->duration * av_q2d(av_make_q(1, AV_TIME_BASE)));
+    return _duration;
 }
 
 int64_t CMediaPlayerImpl::getPosition()
 {
-    return static_cast<int64_t>(ceil(_audio_clock));
+    int64_t position = static_cast<int64_t>(ceil(_audio_clock));
+    if (position > _duration)
+        position = _duration;
+    return position;
 }
 
 bool CMediaPlayerImpl::setPosition(int pos)
@@ -262,11 +265,23 @@ bool CMediaPlayerImpl::pause()
 
 bool CMediaPlayerImpl::forward()
 {
+    if (_speed < MEDIA_PLAYER_SPEED_QUADRUPLE)
+    {
+        int speed = static_cast<int>(_speed) + 1;
+        _speed = static_cast<MEDIA_PLAYER_SPEED>(speed);
+    }
+
     return true;
 }
 
 bool CMediaPlayerImpl::backward()
 {
+    if (_speed > MEDIA_PLAYER_SPEED_QUARTER)
+    {
+        int speed = static_cast<int>(_speed) - 1;
+        _speed = static_cast<MEDIA_PLAYER_SPEED>(speed);
+    }
+
     return true;
 }
 
@@ -395,7 +410,7 @@ bool CMediaPlayerImpl::initAudioStream()
         return false;
     }
 
-    if (!_audio_rescaler->create(codecpar->channel_layout, AV_SAMPLE_FMT_S16, 44100, codecpar->channel_layout,
+    if (!_audio_rescaler->create(codecpar->channel_layout, AV_SAMPLE_FMT_S16, codecpar->sample_rate, codecpar->channel_layout,
                                  static_cast<AVSampleFormat>(codecpar->format), codecpar->sample_rate, codecpar->frame_size))
     {
         log_msg_warn("Create audio rescaler failed.");
@@ -486,12 +501,12 @@ bool CMediaPlayerImpl::createAudioPlayer()
         log_msg_error("malloc failed for %s", strerror(code));
         return false;
     }
-    _audio_info->chunk = _audio_info->pos = nullptr;
+    _audio_info->data = nullptr;
     _audio_info->volume = _volume.load();
-    _audio_info->len = 0;
+    _audio_info->len = _audio_info->pos = 0;
 
     SDL_AudioSpec audio_player;
-    audio_player.freq = 44100; //根据你录制的PCM采样率决定
+    audio_player.freq = _audio_stream->codecpar->sample_rate;
     audio_player.format = AUDIO_S16SYS;
     audio_player.channels = _audio_stream->codecpar->channels;
     audio_player.silence = 0;
@@ -523,9 +538,11 @@ void CMediaPlayerImpl::recvPacketsThr()
 {
     std::unique_lock<std::mutex> lck(_packets_mtx);
     _packets_cond.wait(lck);
+    _video_cond.notify_one();
+    _audio_cond.notify_one();
 
-    //_video_cond.notify_one();
-    //_audio_cond.notify_one();
+    int64_t audio_last_dts = AV_NOPTS_VALUE;
+    int64_t video_last_dts = AV_NOPTS_VALUE;
 
     while (_is_init)
     {
@@ -548,7 +565,7 @@ void CMediaPlayerImpl::recvPacketsThr()
             {
                 char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
                 av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-                log_msg_warn("%s", buff);
+                log_msg_warn("av_seek_frame failed for %s", buff);
                 break;
             }
             _video_queue.clear();
@@ -567,19 +584,19 @@ void CMediaPlayerImpl::recvPacketsThr()
         {
             char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
             av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-            log_msg_warn("%s", buff);
+            log_msg_warn("av_read_frame faile for %s", buff);
             break;
         }
 
-        if (_video_cur_index == pkt.stream_index)
+        if (_video_cur_index == pkt.stream_index && pkt.dts > video_last_dts)
         {
             _video_queue.push(pkt);
-            _video_cond.notify_one();
+            video_last_dts = pkt.dts;
         }
-        else if (_audio_cur_index = pkt.stream_index)
+        else if (_audio_cur_index = pkt.stream_index && pkt.dts > audio_last_dts)
         {
             _audio_queue.push(pkt);
-            _audio_cond.notify_one();
+            audio_last_dts = pkt.dts;
         }
         else
             av_packet_unref(&pkt);
@@ -616,6 +633,7 @@ void CMediaPlayerImpl::dealVideoPacketsThr()
         else
         {
             AVPacket pkt;
+            av_init_packet(&pkt);
             if (!_video_queue.pop(pkt))
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -671,10 +689,6 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
     std::unique_lock<std::mutex> lck(_audio_mtx);
     _audio_cond.wait(lck);
 
-    int out_buff_size = av_samples_get_buffer_size(nullptr, av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO),
-                                                   1024, AV_SAMPLE_FMT_S16, 64);
-    uint8_t * out_buff = (uint8_t *)av_malloc(44100 * 32 / 8 * 2);
-
     while (_is_init)
     {
         // 没在播放中
@@ -693,6 +707,7 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
         else
         {
             AVPacket pkt;
+            av_init_packet(&pkt);
             if (!_audio_queue.pop(pkt) && _is_over)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -708,18 +723,22 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
             break;
         }
 
+        int out_buff_size = 0;
+        uint8_t * out_buff = nullptr;
         AVFrame frm = {};
         bool got = false;
         while (_audio_decoder->recv(&got, &frm) && got)
         {
             if (frm.best_effort_timestamp != AV_NOPTS_VALUE)
                 _audio_clock = static_cast<double>(frm.best_effort_timestamp) * av_q2d(_audio_stream->time_base);
-            _audio_rescaler->rescale(&frm, &out_buff, &out_buff_size);
-            _audio_info->chunk = out_buff;
-            _audio_info->len = out_buff_size;
-            _audio_info->pos = _audio_info->;
+            memset(_audio_info, 0, sizeof(audio_info_t));
+            if (_audio_rescaler->rescale(&frm, &out_buff, &out_buff_size))
+            {
+                _audio_info->data = out_buff;
+                _audio_info->len = out_buff_size;
+                _audio_info->pos = 0;
+            }
             _audio_info->volume = _volume.load();
-
             while (_audio_info->len > 0)
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
