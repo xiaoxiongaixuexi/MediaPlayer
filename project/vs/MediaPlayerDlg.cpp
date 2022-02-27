@@ -271,8 +271,7 @@ void CMediaPlayerDlg::OnBnClickedBtnCtrl()
         return;
     }
 
-    static bool is_play = false;
-    if (!is_play)
+    if (!m_blPlaying)
     {
         CRect rect;
         CWnd * pScreen = GetDlgItem(IDC_STC_SCREEN);
@@ -290,7 +289,7 @@ void CMediaPlayerDlg::OnBnClickedBtnCtrl()
         m_pMediaPtr->pause();
         m_btnCtrl.SetIcon(m_icoPause);
     }
-    is_play = !is_play;
+    m_blPlaying = !m_blPlaying;
 }
 
 
@@ -302,8 +301,10 @@ void CMediaPlayerDlg::OnBnClickedBtnStop()
         delete m_pMediaPtr;
         m_pMediaPtr = nullptr;
     }
+    m_blPlaying = false;
     m_btnCtrl.SetIcon(m_icoPause);
     m_stcDuration.SetWindowText(_T("00:00:00/00:00:00"));
+    GetDlgItem(IDC_STC_SCREEN)->ShowWindow(TRUE);
 }
 
 
@@ -422,6 +423,8 @@ void CMediaPlayerDlg::OnBnClickedBtnVoice()
         iVolume = 64;
     }
 
+    SendMessage(WM_PAINT, 0, 0);
+
     if (m_pMediaPtr)
     {
         m_pMediaPtr->setVolume(iVolume);
@@ -471,6 +474,13 @@ void CMediaPlayerDlg::OnTimer(UINT_PTR nIDEvent)
             CString strVideoDuration;
             strTime(duration, pos, strVideoDuration);
             m_stcDuration.SetWindowText(strVideoDuration);
+            if (pos == duration)
+            {
+                // 播放到最后置为播放结束
+                OnBnClickedBtnStop();
+                //m_blPlaying = false;
+                //m_btnCtrl.SetIcon(m_icoPause);
+            }
         }
     }
 

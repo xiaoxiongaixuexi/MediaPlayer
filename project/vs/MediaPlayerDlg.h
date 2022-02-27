@@ -71,6 +71,7 @@ public:
     afx_msg void OnBnClickedBtnVoice();
     virtual BOOL PreTranslateMessage(MSG * pMsg);
 private:
+    bool m_blPlaying = false;
     CStatic m_stcDuration;
     CButton m_btnLast;
     CButton m_btnNext;

@@ -1,8 +1,6 @@
 ﻿#include "AudioRescalerImpl.h"
 #include "libos.h"
 
-#define MAX_AUDIO_FRAME_SIZE (44100 * 32 / 8) // 1 second of 48khz 32bit audio 48000 * (32/8)
-
 bool CAudioRescalerImpl::create(const int64_t out_layout, const int out_fmt, const int out_sample_rate,
                                 const int64_t in_layout, const int in_fmt, const int in_sample_rate, int frame_size)
 {

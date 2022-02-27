@@ -104,8 +104,14 @@ bool CMediaPlayerImpl::open(const char * url)
     SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO);
 
     _packets_thr = std::thread{ &CMediaPlayerImpl::recvPacketsThr,this };
-    _video_thr = std::thread{ &CMediaPlayerImpl::dealVideoPacketsThr,this };
-    _audio_thr = std::thread{ &CMediaPlayerImpl::dealAudioPacketsThr,this };
+    if (!_video_index.empty())
+    {
+        _video_thr = std::thread{ &CMediaPlayerImpl::dealVideoPacketsThr,this };
+    }
+    if (!_audio_index.empty())
+    {
+        _audio_thr = std::thread{ &CMediaPlayerImpl::dealAudioPacketsThr,this };
+    }
 
     return true;
 }
@@ -136,6 +142,11 @@ void CMediaPlayerImpl::close()
         _audio_thr.join();
     }
 
+    uninitVideoStream();
+    uninitAudioStream();
+    destoryVideoPlayer();
+    destoryAudioPlayer();
+
     if (_fmt_ctx)
     {
         avformat_close_input(&_fmt_ctx);
@@ -146,6 +157,7 @@ void CMediaPlayerImpl::close()
     SDL_Quit();
 
     _audio_index.clear();
+    _video_index.clear();
     _is_playing = false;
     _cur_pos = 0;
     _audio_clock = 0.0;
@@ -156,12 +168,6 @@ int64_t CMediaPlayerImpl::getDuration()
     if (nullptr == _fmt_ctx)
     {
         log_msg_warn("file is not open!");
-        return -1;
-    }
-
-    if (nullptr == _video_stream)
-    {
-        log_msg_warn("get video stream info failed!");
         return -1;
     }
 
@@ -370,6 +376,9 @@ void CMediaPlayerImpl::uninitVideoStream()
         delete _video_decoder;
         _video_decoder = nullptr;
     }
+
+    _video_stream = nullptr;
+    _video_cur_index = -1;
 }
 
 bool CMediaPlayerImpl::initAudioStream()
@@ -436,10 +445,18 @@ void CMediaPlayerImpl::uninitAudioStream()
         delete _audio_decoder;
         _audio_decoder = nullptr;
     }
+
+    _audio_stream = nullptr;
+    _audio_cur_index = -1;
 }
 
 bool CMediaPlayerImpl::createVideoPlayer(const void * wnd, const int width, const int height)
 {
+    if (_video_index.empty())
+    {
+        return true;
+    }
+
     if (nullptr == wnd)
     {
         log_msg_warn("Input param is nullptr.");
@@ -482,6 +499,7 @@ void CMediaPlayerImpl::destoryVideoPlayer()
     }
     if (nullptr != _sdl_render)
     {
+        SDL_RenderClear(_sdl_render);
         SDL_DestroyRenderer(_sdl_render);
         _sdl_render = nullptr;
     }
@@ -494,6 +512,11 @@ void CMediaPlayerImpl::destoryVideoPlayer()
 
 bool CMediaPlayerImpl::createAudioPlayer()
 {
+    if (_audio_index.empty())
+    {
+        return true;
+    }
+
     _audio_info = static_cast<audio_info_t *>(malloc(sizeof(audio_info_t)));
     if (nullptr == _audio_info)
     {
@@ -538,8 +561,6 @@ void CMediaPlayerImpl::recvPacketsThr()
 {
     std::unique_lock<std::mutex> lck(_packets_mtx);
     _packets_cond.wait(lck);
-    _video_cond.notify_one();
-    _audio_cond.notify_one();
 
     int64_t audio_last_dts = AV_NOPTS_VALUE;
     int64_t video_last_dts = AV_NOPTS_VALUE;
@@ -592,11 +613,13 @@ void CMediaPlayerImpl::recvPacketsThr()
         {
             _video_queue.push(pkt);
             video_last_dts = pkt.dts;
+            _video_cond.notify_one();
         }
-        else if (_audio_cur_index = pkt.stream_index && pkt.dts > audio_last_dts)
+        else if (_audio_cur_index == pkt.stream_index && pkt.dts > audio_last_dts)
         {
             _audio_queue.push(pkt);
             audio_last_dts = pkt.dts;
+            _audio_cond.notify_one();
         }
         else
             av_packet_unref(&pkt);
@@ -667,18 +690,31 @@ void CMediaPlayerImpl::dealVideoPacketsThr()
                 continue;
             }
 
-            SDL_UpdateYUVTexture(_sdl_texture, &_sdl_rect,
-                                 yuv_frm.data[0],
-                                 yuv_frm.linesize[0],
-                                 yuv_frm.data[1],
-                                 yuv_frm.linesize[1],
-                                 yuv_frm.data[2],
-                                 yuv_frm.linesize[2]);
+            int ret = SDL_UpdateYUVTexture(_sdl_texture, &_sdl_rect,
+                                           yuv_frm.data[0],
+                                           yuv_frm.linesize[0],
+                                           yuv_frm.data[1],
+                                           yuv_frm.linesize[1],
+                                           yuv_frm.data[2],
+                                           yuv_frm.linesize[2]);
+            if (0 != ret)
+            {
+                log_msg_warn("SDL_UpdateYUVTexture failed");
+            }
 
             _sdl_rect = { 0, 0, _wnd_width, _wnd_height };
 
-            SDL_RenderClear(_sdl_render);
-            SDL_RenderCopy(_sdl_render, _sdl_texture, nullptr, &_sdl_rect);
+            ret = SDL_RenderClear(_sdl_render);
+            if (0 != ret)
+            {
+                log_msg_warn("SDL_RenderClear failed");
+            }
+
+            ret = SDL_RenderCopy(_sdl_render, _sdl_texture, nullptr, &_sdl_rect);
+            if (0 != ret)
+            {
+                log_msg_warn("SDL_RenderCopy failed");
+            }
             SDL_RenderPresent(_sdl_render);
         }
     }
