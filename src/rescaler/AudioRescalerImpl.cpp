@@ -1,5 +1,5 @@
 ﻿#include "AudioRescalerImpl.h"
-#include "libos.h"
+#include "os_log.h"
 
 bool CAudioRescalerImpl::create(const int64_t out_layout, const int out_fmt, const int out_sample_rate,
                                 const int64_t in_layout, const int in_fmt, const int in_sample_rate, int frame_size)

@@ -6,7 +6,7 @@
 #include "framework.h"
 #include "MediaPlayer.h"
 #include "MediaPlayerDlg.h"
-#include "libos.h"
+#include "os_log.h"
 #include "afxdialogex.h"
 #include <io.h>
 

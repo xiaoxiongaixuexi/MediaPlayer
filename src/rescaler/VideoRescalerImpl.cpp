@@ -1,5 +1,5 @@
 ﻿#include "VideoRescalerImpl.h"
-#include "libos.h"
+#include "os_log.h"
 
 bool CVideoRescalerImpl::create(const AVPixelFormat in_fmt, const int in_width, const int in_height,
                                 const AVPixelFormat out_fmt, const int out_width, const int out_height)
@@ -61,7 +61,24 @@ bool CVideoRescalerImpl::create(const AVPixelFormat in_fmt, const int in_width, 
 
 void CVideoRescalerImpl::destroy()
 {
+    if (nullptr != _rescaler)
+    {
+        sws_freeContext(_rescaler);
+        _rescaler = nullptr;
+    }
 
+    if (nullptr != _out_data)
+    {
+        av_freep(&_out_data[0]);
+        memset(_out_data, 0, sizeof(_out_data));
+        memset(_out_linesize, 0, sizeof(_out_linesize));
+    }
+
+    _in_width = 0;
+    _in_height = 0;
+    _out_width = 0;
+    _out_height = 0;
+    _need_rescale = true;
 }
 
 bool CVideoRescalerImpl::rescale(const AVFrame * in_frm, AVFrame * out_frm)

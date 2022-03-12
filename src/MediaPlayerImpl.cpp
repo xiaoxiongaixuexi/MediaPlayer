@@ -1,8 +1,8 @@
 ﻿#include "MediaPlayerImpl.h"
+#include "os_log.h"
 #include "decoder/MediaPlayerDecoderImpl.h"
 #include "rescaler/VideoRescalerImpl.h"
 #include "rescaler/AudioRescalerImpl.h"
-#include "libos.h"
 
 static void readAudioDataCb(void * udata, uint8_t * data, int len)
 {
@@ -480,7 +480,7 @@ bool CMediaPlayerImpl::createVideoPlayer(const void * wnd, const int width, cons
     }
     // 创建纹理器
     _sdl_texture = SDL_CreateTexture(_sdl_render, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, width, height);
-    if (nullptr == _sdl_render)
+    if (nullptr == _sdl_texture)
     {
         log_msg_warn("SDL_CreateTexture failed!");
         destoryVideoPlayer();
