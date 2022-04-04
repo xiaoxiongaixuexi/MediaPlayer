@@ -1,8 +1,10 @@
 ﻿#include "MediaPlayerImpl.h"
+#include "SDL/SDL.h"
 #include "os_log.h"
 #include "decoder/MediaPlayerDecoderImpl.h"
 #include "rescaler/VideoRescalerImpl.h"
 #include "rescaler/AudioRescalerImpl.h"
+#include "renderer/VideoRendererSDL.h"
 
 static void readAudioDataCb(void * udata, uint8_t * data, int len)
 {
@@ -457,33 +459,17 @@ bool CMediaPlayerImpl::createVideoPlayer(const void * wnd, const int width, cons
         return true;
     }
 
-    if (nullptr == wnd)
+    _video_player = new(std::nothrow) CVideoRendererSDL();
+    if (nullptr == _video_player)
     {
-        log_msg_warn("Input param is nullptr.");
+        log_msg_error("new(std::nothrow) CVideoRendererSDL() failed");
         return false;
     }
-
-    // 创建窗口
-    _player_wnd = SDL_CreateWindowFrom(wnd);
-    if (nullptr == _player_wnd)
+    if (!_video_player->create(wnd, width, height))
     {
-        log_msg_warn("SDL_CreateWindowFrom failed.");
-        return false;
-    }
-    // 创建渲染器
-    _sdl_render = SDL_CreateRenderer(_player_wnd, -1, SDL_RENDERER_TARGETTEXTURE);
-    if (nullptr == _sdl_render)
-    {
-        log_msg_warn("SDL_CreateRenderer failed.");
-        destoryVideoPlayer();
-        return false;
-    }
-    // 创建纹理器
-    _sdl_texture = SDL_CreateTexture(_sdl_render, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, width, height);
-    if (nullptr == _sdl_texture)
-    {
-        log_msg_warn("SDL_CreateTexture failed!");
-        destoryVideoPlayer();
+        log_msg_warn("Create video player failed!");
+        delete _video_player;
+        _video_player = nullptr;
         return false;
     }
 
@@ -492,21 +478,11 @@ bool CMediaPlayerImpl::createVideoPlayer(const void * wnd, const int width, cons
 
 void CMediaPlayerImpl::destoryVideoPlayer()
 {
-    if (nullptr != _sdl_texture)
+    if (nullptr != _video_player)
     {
-        SDL_DestroyTexture(_sdl_texture);
-        _sdl_texture = nullptr;
-    }
-    if (nullptr != _sdl_render)
-    {
-        SDL_RenderClear(_sdl_render);
-        SDL_DestroyRenderer(_sdl_render);
-        _sdl_render = nullptr;
-    }
-    if (nullptr != _player_wnd)
-    {
-        SDL_DestroyWindow(_player_wnd);
-        _player_wnd = nullptr;
+        _video_player->destroy();
+        delete _video_player;
+        _video_player = nullptr;
     }
 }
 
@@ -594,7 +570,7 @@ void CMediaPlayerImpl::recvPacketsThr()
             _is_skip = false;
         }
 
-        if (_video_queue.size() > 500 && _audio_queue.size() > 500)
+        if (_video_queue.size() > 300 && _audio_queue.size() > 300)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             continue;
@@ -603,9 +579,13 @@ void CMediaPlayerImpl::recvPacketsThr()
         int ret = av_read_frame(_fmt_ctx, &pkt);
         if (ret < 0)
         {
+            if (AVERROR_EOF == ret)
+            {
+                break;
+            }
             char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
             av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-            log_msg_warn("av_read_frame faile for %s", buff);
+            log_msg_warn("av_read_frame failed for %s", buff);
             break;
         }
 
@@ -634,7 +614,13 @@ void CMediaPlayerImpl::dealVideoPacketsThr()
 
     if (nullptr == _video_rescaler)
     {
-        log_msg_warn("no available rescaler!");
+        log_msg_warn("No available video rescaler!");
+        return;
+    }
+
+    if (nullptr == _video_player)
+    {
+        log_msg_warn("No available video player!");
         return;
     }
 
@@ -677,12 +663,6 @@ void CMediaPlayerImpl::dealVideoPacketsThr()
         while (_video_decoder->recv(&got, &frm) && got)
         {
             got = false;
-            double pts = frm.best_effort_timestamp == AV_NOPTS_VALUE ? 0.0 : frm.best_effort_timestamp;
-            pts = static_cast<double>(pts) * av_q2d(_video_stream->time_base);
-            double delay = pts - _audio_clock;
-            if (delay > 0.0)
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(delay * 1000)));
-
             AVFrame yuv_frm = { 0 };
             if (!_video_rescaler->rescale(&frm, &yuv_frm))
             {
@@ -690,32 +670,13 @@ void CMediaPlayerImpl::dealVideoPacketsThr()
                 continue;
             }
 
-            int ret = SDL_UpdateYUVTexture(_sdl_texture, &_sdl_rect,
-                                           yuv_frm.data[0],
-                                           yuv_frm.linesize[0],
-                                           yuv_frm.data[1],
-                                           yuv_frm.linesize[1],
-                                           yuv_frm.data[2],
-                                           yuv_frm.linesize[2]);
-            if (0 != ret)
-            {
-                log_msg_warn("SDL_UpdateYUVTexture failed");
-            }
+            _video_player->setData(yuv_frm.data, yuv_frm.linesize);
 
-            _sdl_rect = { 0, 0, _wnd_width, _wnd_height };
-
-            ret = SDL_RenderClear(_sdl_render);
-            if (0 != ret)
-            {
-                log_msg_warn("SDL_RenderClear failed");
-            }
-
-            ret = SDL_RenderCopy(_sdl_render, _sdl_texture, nullptr, &_sdl_rect);
-            if (0 != ret)
-            {
-                log_msg_warn("SDL_RenderCopy failed");
-            }
-            SDL_RenderPresent(_sdl_render);
+            double pts = frm.best_effort_timestamp == AV_NOPTS_VALUE ? 0.0 : frm.best_effort_timestamp;
+            pts = static_cast<double>(pts) * av_q2d(_video_stream->time_base);
+            double delay = pts - _audio_clock;
+            if (delay > 0.0)
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(delay * 1000)));
         }
     }
 }
@@ -779,9 +740,4 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
-}
-
-double CMediaPlayerImpl::getAudioClock()
-{
-    return 0.0;
 }

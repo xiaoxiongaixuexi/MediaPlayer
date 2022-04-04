@@ -22,6 +22,12 @@
     <Filter Include="源文件\src\rescaler">
       <UniqueIdentifier>{887ca29b-7ad5-4743-8d53-d4296b637b90}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\src\utils">
+      <UniqueIdentifier>{46234082-4950-4549-9420-ec66284d352d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\src\renderer">
+      <UniqueIdentifier>{f025b4d6-86ee-421a-a753-2940590a3bda}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MediaPlayer.h">
@@ -57,6 +63,12 @@
     <ClInclude Include="..\..\src\rescaler\VideoRescalerImpl.h">
       <Filter>源文件\src\rescaler</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\renderer\VideoRendererSDL.h">
+      <Filter>源文件\src\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils\MediaPlayerUtils.h">
+      <Filter>源文件\src\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MediaPlayer.cpp">
@@ -79,6 +91,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\rescaler\VideoRescalerImpl.cpp">
       <Filter>源文件\src\rescaler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\renderer\VideoRendererSDL.cpp">
+      <Filter>源文件\src\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\utils\MediaPlayerUtils.cpp">
+      <Filter>源文件\src\utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

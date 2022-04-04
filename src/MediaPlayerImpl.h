@@ -10,7 +10,6 @@
 #include <condition_variable>
 #include "MediaMessageQueue.h"
 
-#include "SDL.h"
 extern "C" {
 #include "libavutil/avutil.h"
 #include "libavformat/avformat.h"
@@ -39,6 +38,7 @@ typedef struct _audio_info_t
 class CVideoRescalerImpl;
 class CAudioRescalerImpl;
 class CAVDecoderImpl;
+class CVideoRendererSDL;
 
 class CMediaPlayerImpl
 {
@@ -111,9 +111,6 @@ protected:
     // 处理音频数据线程
     void dealAudioPacketsThr();
 
-    // 获取音频时钟
-    double getAudioClock();
-
 private:
     // 是否初始化
     std::atomic_bool _is_init = { false };
@@ -160,6 +157,8 @@ private:
     CAVDecoderImpl * _video_decoder = nullptr;
     // 视频转换器
     CVideoRescalerImpl * _video_rescaler = nullptr;
+    // 视频播放器
+    CVideoRendererSDL * _video_player = nullptr;
 
     // 音频流索引数组
     std::vector<int> _audio_index;
@@ -189,15 +188,6 @@ private:
     int _frm_height = 0;
 
     audio_info_t * _audio_info = nullptr;
-
-    // 位置
-    SDL_Rect _sdl_rect = { 0 };
-    // 播放器句柄
-    SDL_Window * _player_wnd = nullptr;
-    // 渲染器
-    SDL_Renderer * _sdl_render = nullptr;
-    // 色泽纹理
-    SDL_Texture * _sdl_texture = nullptr;
 
     // 视频包队列
     CMediaMessageQueue<AVPacket> _video_queue;
