@@ -1,10 +1,10 @@
 ﻿#include "MediaPlayerImpl.h"
 #include "SDL/SDL.h"
 #include "os_log.h"
-#include "decoder/MediaPlayerDecoderImpl.h"
+#include "decode/MediaPlayerDecoderImpl.h"
 #include "rescaler/VideoRescalerImpl.h"
 #include "rescaler/AudioRescalerImpl.h"
-#include "renderer/VideoRendererSDL.h"
+#include "render/VideoRenderSDL.h"
 
 static void readAudioDataCb(void * udata, uint8_t * data, int len)
 {

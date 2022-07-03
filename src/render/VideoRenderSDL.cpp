@@ -1,4 +1,4 @@
-﻿#include "VideoRendererSDL.h"
+﻿#include "VideoRenderSDL.h"
 #include "os_log.h"
 
 bool CVideoRendererSDL::create(const void * wnd, int width, int height)

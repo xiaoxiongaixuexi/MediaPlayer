@@ -8,7 +8,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include "MediaMessageQueue.h"
+#include "utils/MediaPlayerQueue.h"
 
 extern "C" {
 #include "libavutil/avutil.h"
@@ -190,9 +190,9 @@ private:
     audio_info_t * _audio_info = nullptr;
 
     // 视频包队列
-    CMediaMessageQueue<AVPacket> _video_queue;
+    CMediaPlayerQueue<AVPacket> _video_queue;
     // 音频包队列
-    CMediaMessageQueue<AVPacket> _audio_queue;
+    CMediaPlayerQueue<AVPacket> _audio_queue;
 
     // 音频音量
     std::atomic_int _volume = { 64 };

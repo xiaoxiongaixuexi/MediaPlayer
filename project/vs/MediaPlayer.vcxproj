@@ -227,12 +227,15 @@ xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\decoder\MediaPlayerDecoderImpl.h" />
-    <ClInclude Include="..\..\src\MediaMessageQueue.h" />
+    <ClInclude Include="..\..\src\decode\MediaPlayerDecoderImpl.h" />
+    <ClInclude Include="..\..\src\demux\MediaPlayerDemux.h" />
     <ClInclude Include="..\..\src\MediaPlayerImpl.h" />
-    <ClInclude Include="..\..\src\renderer\VideoRendererSDL.h" />
+    <ClInclude Include="..\..\src\render\AudioRenderSDL.h" />
+    <ClInclude Include="..\..\src\render\VideoRenderSDL.h" />
     <ClInclude Include="..\..\src\rescaler\AudioRescalerImpl.h" />
     <ClInclude Include="..\..\src\rescaler\VideoRescalerImpl.h" />
+    <ClInclude Include="..\..\src\utils\MediaPlayerQueue.h" />
+    <ClInclude Include="..\..\src\utils\MediaPlayerRecord.h" />
     <ClInclude Include="..\..\src\utils\MediaPlayerUtils.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="MediaPlayer.h" />
@@ -242,11 +245,14 @@ xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\decoder\MediaPlayerDecoderImpl.cpp" />
+    <ClCompile Include="..\..\src\decode\MediaPlayerDecoderImpl.cpp" />
+    <ClCompile Include="..\..\src\demux\MediaPlayerDemux.cpp" />
     <ClCompile Include="..\..\src\MediaPlayerImpl.cpp" />
-    <ClCompile Include="..\..\src\renderer\VideoRendererSDL.cpp" />
+    <ClCompile Include="..\..\src\render\AudioRenderSDL.cpp" />
+    <ClCompile Include="..\..\src\render\VideoRenderSDL.cpp" />
     <ClCompile Include="..\..\src\rescaler\AudioRescalerImpl.cpp" />
     <ClCompile Include="..\..\src\rescaler\VideoRescalerImpl.cpp" />
+    <ClCompile Include="..\..\src\utils\MediaPlayerRecord.cpp" />
     <ClCompile Include="..\..\src\utils\MediaPlayerUtils.cpp" />
     <ClCompile Include="MediaPlayer.cpp" />
     <ClCompile Include="MediaPlayerDlg.cpp" />
