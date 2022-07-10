@@ -274,6 +274,7 @@ xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir
     <Image Include="res\folder.ico" />
     <Image Include="res\forward.ico" />
     <Image Include="res\last.ico" />
+    <Image Include="res\link.ico" />
     <Image Include="res\MediaPlayer.ico" />
     <Image Include="res\next.ico" />
     <Image Include="res\pause.ico" />

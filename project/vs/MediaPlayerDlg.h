@@ -48,6 +48,7 @@ private:
     CButton m_btnForward;
     CButton m_btnBackward;
     CButton m_btnOpen;
+    CButton m_btnLink;
 
     HICON m_icoStart;      // 开始
     HICON m_icoPause;      // 暂停
@@ -59,6 +60,7 @@ private:
     HICON m_icoVoice;
     HICON m_icoSilence;
     HICON m_icoOpen;
+    HICON m_icoLink;
     CToolTipCtrl m_toolTip;
 public:
     afx_msg void OnBnClickedBtnCtrl();
@@ -86,4 +88,5 @@ public:
     afx_msg void OnNMReleasedcaptureSldProgress(NMHDR * pNMHDR, LRESULT * pResult);
     afx_msg void OnTimer(UINT_PTR nIDEvent);
     void strTime(int64_t duration, int64_t ts, CString & str);
+    afx_msg void OnSize(UINT nType, int cx, int cy);
 };

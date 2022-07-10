@@ -73,6 +73,7 @@ void CMediaPlayerDlg::DoDataExchange(CDataExchange * pDX)
     DDX_Control(pDX, IDC_BTN_VOICE, m_btnVoice);
     DDX_Control(pDX, IDC_SLD_PROGRESS, m_sldProgress);
     DDX_Control(pDX, IDC_SLD_VOICE, m_sldVoice);
+    DDX_Control(pDX, IDC_BTN_LINK, m_btnLink);
 }
 
 BEGIN_MESSAGE_MAP(CMediaPlayerDlg, CDialogEx)
@@ -148,12 +149,12 @@ BOOL CMediaPlayerDlg::OnInitDialog()
     m_toolTip.AddTool(GetDlgItem(IDC_BTN_OPEN), _T("打开"));
 
     m_fontSize.CreatePointFont(120, _T("微软雅黑"), nullptr);
-    GetDlgItem(IDC_STC_TITLE)->SetFont(&m_fontSize);
     m_lstRecord.SetFont(&m_fontSize);
     m_lstRecord.SetBkColor(BACK_COLOR);
     m_lstRecord.SetTextBkColor(BACK_COLOR);
     m_lstRecord.SetTextColor(FONT_COLOR);
-    m_lstRecord.InsertItem(0, _T("张韶涵-阿刁"));
+    m_lstRecord.InsertItem(0, _T("          播放记录"));
+    m_lstRecord.InsertItem(1, _T("张韶涵-阿刁"));
     m_brush.CreateSolidBrush(BACK_COLOR);
     m_stcDuration.SetFont(&m_fontSize);
 
@@ -179,6 +180,8 @@ BOOL CMediaPlayerDlg::OnInitDialog()
                                     btnRect.Width() - GAP_SIZE, btnRect.Height() - GAP_SIZE, LR_DEFAULTCOLOR | LR_CREATEDIBSECTION);
     m_icoOpen = (HICON)LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICO_FOLDER), IMAGE_ICON,
                                  btnRect.Width() - GAP_SIZE, btnRect.Height() - GAP_SIZE, LR_DEFAULTCOLOR | LR_CREATEDIBSECTION);
+    m_icoLink = (HICON)LoadImage(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICO_LINK), IMAGE_ICON,
+                                 btnRect.Width() - GAP_SIZE, btnRect.Height() - GAP_SIZE, LR_DEFAULTCOLOR | LR_CREATEDIBSECTION);
     m_btnCtrl.SetIcon(m_icoPause);
     m_btnStop.SetIcon(m_icoStop);
     m_btnForward.SetIcon(m_icoForward);
@@ -187,6 +190,7 @@ BOOL CMediaPlayerDlg::OnInitDialog()
     m_btnNext.SetIcon(m_icoNext);
     m_btnVoice.SetIcon(m_icoVoice);
     m_btnOpen.SetIcon(m_icoOpen);
+    m_btnLink.SetIcon(m_icoLink);
     m_sldVoice.SetRange(0, 128);
     m_sldVoice.SetTicFreq(1);
     m_sldVoice.SetPos(80);
@@ -496,4 +500,116 @@ void CMediaPlayerDlg::strTime(int64_t duration, int64_t ts, CString & str)
     int t_minute = static_cast<int>(ts / 60 % 60);
     int t_second = static_cast<int>(ts % 60);
     str.Format(_T("%02d:%02d:%02d/%02d:%02d:%02d"), t_hour, t_minute, t_second, d_hour, d_minute, d_second);
+}
+void CMediaPlayerDlg::OnSize(UINT nType, int cx, int cy)
+{
+    CDialogEx::OnSize(nType, cx, cy);
+
+    CRect rect;
+    CButton * btnCtrl = (CButton *)GetDlgItem(IDC_BTN_CTRL);
+    if (NULL != btnCtrl)
+    {
+        btnCtrl->GetClientRect(&rect);
+        btnCtrl->MoveWindow(0, cy - rect.Height(), rect.Width(), rect.Height());
+    }
+    const int btnHeight = rect.Height();
+
+    CButton * btnStop = (CButton *)GetDlgItem(IDC_BTN_STOP);
+    if (NULL != btnStop)
+    {
+        btnStop->GetClientRect(&rect);
+        btnStop->MoveWindow(rect.Width() + 1, cy - rect.Height(), rect.Width(), rect.Height());
+    }
+
+    CButton * btnForward = (CButton *)GetDlgItem(IDC_BTN_FORWARD);
+    if (NULL != btnForward)
+    {
+        btnForward->GetClientRect(&rect);
+        btnForward->MoveWindow(rect.Width() * 2 + 2, cy - rect.Height(), rect.Width(), rect.Height());
+    }
+
+    CButton * btnBackward = (CButton *)GetDlgItem(IDC_BTN_BACKWARD);
+    if (NULL != btnBackward)
+    {
+        btnBackward->GetClientRect(&rect);
+        btnBackward->MoveWindow(rect.Width() * 3 + 3, cy - rect.Height(), rect.Width(), rect.Height());
+    }
+
+    CButton * btnLast = (CButton *)GetDlgItem(IDC_BTN_LAST);
+    if (NULL != btnLast)
+    {
+        btnLast->GetClientRect(&rect);
+        btnLast->MoveWindow(rect.Width() * 4 + 4, cy - rect.Height(), rect.Width(), rect.Height());
+    }
+
+    CButton * btnNext = (CButton *)GetDlgItem(IDC_BTN_NEXT);
+    if (NULL != btnNext)
+    {
+        btnNext->GetClientRect(&rect);
+        btnNext->MoveWindow(rect.Width() * 5 + 5, cy - rect.Height(), rect.Width(), rect.Height());
+    }
+
+    CListCtrl * lstRecord = (CListCtrl *)GetDlgItem(IDC_LST_PLAY);
+    if (NULL != lstRecord)
+    {
+        lstRecord->GetWindowRect(&rect);
+        lstRecord->MoveWindow(cx - rect.Width(), 0, rect.Width(), cy);
+    }
+
+    const int lstWidth = rect.Width();
+
+    CSliderCtrl * sldVoice = (CSliderCtrl *)GetDlgItem(IDC_SLD_VOICE);
+    if (NULL != sldVoice)
+    {
+        sldVoice->GetClientRect(&rect);
+        sldVoice->MoveWindow(cx - rect.Width() - lstWidth, cy - btnHeight - rect.Height(), rect.Width(), rect.Height());
+    }
+
+    const int sldWidth = rect.Width();
+    CButton * btnVoice = (CButton *)GetDlgItem(IDC_BTN_VOICE);
+    if (NULL != btnVoice)
+    {
+        btnVoice->GetClientRect(&rect);
+        btnVoice->MoveWindow(cx - sldWidth - lstWidth - rect.Width(), cy - btnHeight - rect.Height(), rect.Width(), rect.Height());
+    }
+
+    const int voiceWidth = rect.Width();
+    const int voiceHeight = rect.Height();
+    CSliderCtrl * sldProgress = (CSliderCtrl *)GetDlgItem(IDC_SLD_PROGRESS);
+    if (NULL != sldProgress)
+    {
+        sldProgress->GetClientRect(&rect);
+        sldProgress->MoveWindow(0, cy - btnHeight - voiceHeight, cx - lstWidth - sldWidth - voiceWidth - 1, voiceHeight);
+    }
+
+    CStatic * stcScreen = (CStatic *)GetDlgItem(IDC_STC_SCREEN);
+    if (NULL != stcScreen)
+    {
+        stcScreen->GetClientRect(&rect);
+        stcScreen->MoveWindow(0, 0, cx - lstWidth, cy - btnHeight - voiceHeight);
+    }
+
+    CButton * btnLink = (CButton *)GetDlgItem(IDC_BTN_LINK);
+    if (NULL != btnLink)
+    {
+        btnLink->GetClientRect(&rect);
+        btnLink->MoveWindow(cx - rect.Width() * 2 - lstWidth - 2, cy - rect.Height(), rect.Width(), rect.Height());
+    }
+
+    CButton * btnFile = (CButton *)GetDlgItem(IDC_BTN_OPEN);
+    if (NULL != btnFile)
+    {
+        btnFile->GetClientRect(&rect);
+        btnFile->MoveWindow(cx - rect.Width() - lstWidth - 1, cy - rect.Height(), rect.Width(), rect.Height());
+    }
+
+    CStatic * stcDuration = (CStatic *)GetDlgItem(IDC_STC_DURATION);
+    if (NULL != stcDuration)
+    {
+        const int width = rect.Width();
+        const int height = rect.Height();
+        stcDuration->MoveWindow(width * 6 + 6, cy - height, cx - width * 8 - 9 - lstWidth, height);
+    }
+
+    Invalidate();
 }
