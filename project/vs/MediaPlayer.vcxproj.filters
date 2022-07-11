@@ -90,6 +90,9 @@
     <ClInclude Include="..\..\src\decode\MediaPlayerDecoderImpl.h">
       <Filter>源文件\src\decode</Filter>
     </ClInclude>
+    <ClInclude Include="MediaPlayerLinkDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MediaPlayer.cpp">
@@ -127,6 +130,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\decode\MediaPlayerDecoderImpl.cpp">
       <Filter>源文件\src\decode</Filter>
+    </ClCompile>
+    <ClCompile Include="MediaPlayerLinkDlg.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -171,6 +177,9 @@
       <Filter>资源文件</Filter>
     </Image>
     <Image Include="res\voice.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\link.ico">
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>

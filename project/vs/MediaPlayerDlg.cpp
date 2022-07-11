@@ -6,6 +6,7 @@
 #include "framework.h"
 #include "MediaPlayer.h"
 #include "MediaPlayerDlg.h"
+#include "MediaPlayerLinkDlg.h"
 #include "os_log.h"
 #include "afxdialogex.h"
 #include <io.h>
@@ -92,6 +93,8 @@ BEGIN_MESSAGE_MAP(CMediaPlayerDlg, CDialogEx)
     ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLD_VOICE, &CMediaPlayerDlg::OnNMCustomdrawSldVoice)
     ON_NOTIFY(NM_RELEASEDCAPTURE, IDC_SLD_PROGRESS, &CMediaPlayerDlg::OnNMReleasedcaptureSldProgress)
     ON_WM_TIMER()
+    ON_WM_SIZE()
+    ON_BN_CLICKED(IDC_BTN_LINK, &CMediaPlayerDlg::OnBnClickedBtnLink)
 END_MESSAGE_MAP()
 
 
@@ -612,4 +615,23 @@ void CMediaPlayerDlg::OnSize(UINT nType, int cx, int cy)
     }
 
     Invalidate();
+}
+
+
+void CMediaPlayerDlg::OnBnClickedBtnLink()
+{
+    CMediaPlayerLinkDlg dlg;
+    if (IDOK != dlg.DoModal())
+    {
+        return;
+    }
+
+    CString strLinkName = dlg.getLinkName();
+    if (strLinkName.IsEmpty())
+    {
+        MessageBox(_T("输入链接为空！"), _T("警告"), MB_ICONWARNING | MB_OK);
+        return;
+    }
+
+    // TODO:打开链接
 }

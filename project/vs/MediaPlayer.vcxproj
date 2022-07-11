@@ -228,7 +228,7 @@ xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\decode\MediaPlayerDecoderImpl.h" />
-    <ClInclude Include="..\..\src\demux\MediaPlayerDemux.h" />
+    <ClInclude Include="..\..\src\demux\MediaPlayerDemuxFfmpeg.h" />
     <ClInclude Include="..\..\src\MediaPlayerImpl.h" />
     <ClInclude Include="..\..\src\render\AudioRenderSDL.h" />
     <ClInclude Include="..\..\src\render\VideoRenderSDL.h" />
@@ -240,13 +240,14 @@ xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir
     <ClInclude Include="framework.h" />
     <ClInclude Include="MediaPlayer.h" />
     <ClInclude Include="MediaPlayerDlg.h" />
+    <ClInclude Include="MediaPlayerLinkDlg.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\decode\MediaPlayerDecoderImpl.cpp" />
-    <ClCompile Include="..\..\src\demux\MediaPlayerDemux.cpp" />
+    <ClCompile Include="..\..\src\demux\MediaPlayerDemuxFfmpeg.cpp" />
     <ClCompile Include="..\..\src\MediaPlayerImpl.cpp" />
     <ClCompile Include="..\..\src\render\AudioRenderSDL.cpp" />
     <ClCompile Include="..\..\src\render\VideoRenderSDL.cpp" />
@@ -256,6 +257,7 @@ xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir
     <ClCompile Include="..\..\src\utils\MediaPlayerUtils.cpp" />
     <ClCompile Include="MediaPlayer.cpp" />
     <ClCompile Include="MediaPlayerDlg.cpp" />
+    <ClCompile Include="MediaPlayerLinkDlg.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

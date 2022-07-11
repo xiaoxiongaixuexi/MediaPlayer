@@ -19,6 +19,7 @@
 #define IDI_ICON5                       139
 #define IDI_ICO_VOICE                   139
 #define IDI_ICO_LINK                    142
+#define IDD_DLG_LINK                    143
 #define IDC_STC_SCREEN                  1001
 #define IDC_SLD_PROGRESS                1002
 #define IDC_BTN_CTRL                    1003
@@ -33,14 +34,18 @@
 #define IDC_BTN_VOICE                   1013
 #define IDC_SLD_VOICE                   1014
 #define IDC_BTN_LINK                    1015
+#define IDC_EET_NET_LINK                1019
+#define IDC_STC_NET_LINK                1020
+#define IDC_BTN_LINK_CONFIRM            1021
+#define IDC_BTN_LINK_CANCEL             1022
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        143
+#define _APS_NEXT_RESOURCE_VALUE        145
 #define _APS_NEXT_COMMAND_VALUE         32785
-#define _APS_NEXT_CONTROL_VALUE         1019
+#define _APS_NEXT_CONTROL_VALUE         1023
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
