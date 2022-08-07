@@ -229,7 +229,9 @@ xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir
   <ItemGroup>
     <ClInclude Include="..\..\src\decode\MediaPlayerDecoderImpl.h" />
     <ClInclude Include="..\..\src\demux\MediaPlayerDemuxFfmpeg.h" />
+    <ClInclude Include="..\..\src\encode\MediaPlayerEncoder.h" />
     <ClInclude Include="..\..\src\MediaPlayerImpl.h" />
+    <ClInclude Include="..\..\src\mux\MediaPlayerMux.h" />
     <ClInclude Include="..\..\src\render\AudioRenderSDL.h" />
     <ClInclude Include="..\..\src\render\VideoRenderSDL.h" />
     <ClInclude Include="..\..\src\rescaler\AudioRescalerImpl.h" />
@@ -248,7 +250,9 @@ xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir
   <ItemGroup>
     <ClCompile Include="..\..\src\decode\MediaPlayerDecoderImpl.cpp" />
     <ClCompile Include="..\..\src\demux\MediaPlayerDemuxFfmpeg.cpp" />
+    <ClCompile Include="..\..\src\encode\MediaPlayerEncoder.cpp" />
     <ClCompile Include="..\..\src\MediaPlayerImpl.cpp" />
+    <ClCompile Include="..\..\src\mux\MediaPlayerMux.cpp" />
     <ClCompile Include="..\..\src\render\AudioRenderSDL.cpp" />
     <ClCompile Include="..\..\src\render\VideoRenderSDL.cpp" />
     <ClCompile Include="..\..\src\rescaler\AudioRescalerImpl.cpp" />

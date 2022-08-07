@@ -1,6 +1,8 @@
 ﻿#include "MediaPlayerImpl.h"
 #include "SDL/SDL.h"
 #include "os_log.h"
+#include "demux/MediaPlayerDemuxFfmpeg.h"
+
 #include "decode/MediaPlayerDecoderImpl.h"
 #include "rescaler/VideoRescalerImpl.h"
 #include "rescaler/AudioRescalerImpl.h"
@@ -26,9 +28,9 @@ static void readAudioDataCb(void * udata, uint8_t * data, int len)
 
 bool CMediaPlayerImpl::open(const char * url)
 {
-    if (nullptr == url)
+    if (nullptr == url || '\0' == url[0])
     {
-        log_msg_warn("Input param is nullptr!");
+        log_msg_warn("Input param is nullptr or empty!");
         return false;
     }
 
@@ -38,46 +40,23 @@ bool CMediaPlayerImpl::open(const char * url)
         return false;
     }
 
-    _fmt_ctx = avformat_alloc_context();
-    if (nullptr == _fmt_ctx)
+    _demux_ctx = new(std::nothrow) CMediaPlayerDemux();
+    if (nullptr == _demux_ctx)
     {
-        log_msg_warn("avformat_alloc_context failed!");
+        log_msg_error("Create CMediaPlayerDemux instance failed");
         return false;
     }
 
-    int ret = -1;
-    do
+    if (!_demux_ctx->open(url, ""))
     {
-        ret = avformat_open_input(&_fmt_ctx, url, nullptr, nullptr);
-        if (0 != ret)
-        {
-            char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-            av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-            log_msg_warn("avformat_open_input %s failed, err:%s", url, buff);
-            break;
-        }
-
-        ret = avformat_find_stream_info(_fmt_ctx, nullptr);
-        if (ret < 0)
-        {
-            char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-            av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-            log_msg_warn("avformat_find_stream_info %s failed, err:%s", url, buff);
-            break;
-        }
-    } while (false);
-
-    if (ret < 0)
-    {
-        avformat_close_input(&_fmt_ctx);
-        avformat_free_context(_fmt_ctx);
-        _fmt_ctx = nullptr;
+        log_msg_warn("Open url %s failed", url);
         return false;
     }
 
-    for (uint32_t i = 0; i < _fmt_ctx->nb_streams; ++i)
+    const uint32_t streams_cnt = _demux_ctx->getSreamsCount();
+    for (uint32_t i = 0; i < streams_cnt; ++i)
     {
-        const auto * av_stream = _fmt_ctx->streams[i];
+        const auto * av_stream = _demux_ctx->getStreamInfo(i);
         if (AVMEDIA_TYPE_VIDEO == av_stream->codecpar->codec_type)
         {
             _video_index.emplace_back(i);
@@ -91,16 +70,16 @@ bool CMediaPlayerImpl::open(const char * url)
     if (!_video_index.empty())
     {
         _video_cur_index = _video_index[0];
-        _video_stream = _fmt_ctx->streams[_video_cur_index.load()];
+        _video_stream = _demux_ctx->getStreamInfo(_video_cur_index.load());
     }
 
     if (!_audio_index.empty())
     {
         _audio_cur_index = _audio_index[0];
-        _audio_stream = _fmt_ctx->streams[_audio_cur_index.load()];
+        _audio_stream = _demux_ctx->getStreamInfo(_audio_cur_index.load());
     }
 
-    _duration = static_cast<int64_t>(_fmt_ctx->duration * av_q2d(av_make_q(1, AV_TIME_BASE)));
+    _duration = _demux_ctx->getDuration();
     _is_init = true;
 
     SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO);
@@ -149,11 +128,11 @@ void CMediaPlayerImpl::close()
     destoryVideoPlayer();
     destoryAudioPlayer();
 
-    if (_fmt_ctx)
+    if (nullptr != _demux_ctx)
     {
-        avformat_close_input(&_fmt_ctx);
-        avformat_free_context(_fmt_ctx);
-        _fmt_ctx = nullptr;
+        _demux_ctx->close();
+        delete _demux_ctx;
+        _demux_ctx = nullptr;
     }
 
     SDL_Quit();
@@ -167,7 +146,7 @@ void CMediaPlayerImpl::close()
 
 int64_t CMediaPlayerImpl::getDuration()
 {
-    if (nullptr == _fmt_ctx)
+    if (nullptr == _demux_ctx)
     {
         log_msg_warn("file is not open!");
         return -1;
@@ -186,7 +165,7 @@ int64_t CMediaPlayerImpl::getPosition()
 
 bool CMediaPlayerImpl::setPosition(int pos)
 {
-    if (nullptr == _fmt_ctx)
+    if (nullptr == _demux_ctx)
     {
         log_msg_warn("No opened faile!");
         return false;
@@ -295,7 +274,7 @@ bool CMediaPlayerImpl::backward()
 
 bool CMediaPlayerImpl::setVolume(const int volume)
 {
-    if (nullptr == _fmt_ctx || nullptr == _audio_stream)
+    if (nullptr == _demux_ctx || nullptr == _audio_stream)
     {
         log_msg_warn("There is no opened file ...");
         return false;
@@ -422,7 +401,7 @@ bool CMediaPlayerImpl::initAudioStream()
     }
 
     if (!_audio_rescaler->create(codecpar->channel_layout, AV_SAMPLE_FMT_S16, codecpar->sample_rate, codecpar->channel_layout,
-                                 static_cast<AVSampleFormat>(codecpar->format), codecpar->sample_rate, codecpar->frame_size))
+        static_cast<AVSampleFormat>(codecpar->format), codecpar->sample_rate, codecpar->frame_size))
     {
         log_msg_warn("Create audio rescaler failed.");
         uninitAudioStream();
@@ -557,12 +536,9 @@ void CMediaPlayerImpl::recvPacketsThr()
         if (_is_skip)
         {
             int64_t ts = static_cast<int64_t>(_cur_pos.load()) * AV_TIME_BASE;
-            int ret = av_seek_frame(_fmt_ctx, -1, ts, AVSEEK_FLAG_ANY);
-            if (ret < 0)
+            if (!_demux_ctx->seek(-1, ts, AVSEEK_FLAG_ANY))
             {
-                char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-                av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-                log_msg_warn("av_seek_frame failed for %s", buff);
+                log_msg_warn("seek failed");
                 break;
             }
             _video_queue.clear();
@@ -576,16 +552,9 @@ void CMediaPlayerImpl::recvPacketsThr()
             continue;
         }
 
-        int ret = av_read_frame(_fmt_ctx, &pkt);
-        if (ret < 0)
+        if (!_demux_ctx->readPacket(&pkt))
         {
-            if (AVERROR_EOF == ret)
-            {
-                break;
-            }
-            char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-            av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-            log_msg_warn("av_read_frame failed for %s", buff);
+            log_msg_warn("read packet failed");
             break;
         }
 

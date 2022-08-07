@@ -1,23 +1,30 @@
 ﻿#pragma once
 
-#include <cstdio>
 #include <cstdint>
 #include <cstdbool>
 #include <string>
 #include <vector>
-#include <queue>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <unordered_map>
 
-extern "C"{
-#include "libavutil/avutil.h"
-#include "libavutil/time.h"
+extern "C" {
 #include "libavformat/avformat.h"
 }
 
-class CMediaPlayerDemux
+typedef struct _MediaPlayerStream
+{
+    bool got_first_pkt;
+    bool wraped;
+    int stream_index;
+    int64_t ts_offset;
+    int64_t dts;
+    int64_t pts;
+    int64_t next_dts;
+    int64_t next_pts;
+    int64_t start_time;
+    int64_t wraped_ts;
+    AVStream * si;
+} MediaPlayerStream;
+
+class CMediaPlayerDemux final
 {
 public:
     CMediaPlayerDemux() = default;
@@ -27,16 +34,18 @@ public:
     bool open(const std::string & url, const std::string & fmt_name, const std::string & extra = "");
     // 关闭
     void close();
+    // 获取文件时长
+    int64_t getDuration();
     // 获取流个数
-    int getSreamsCount();
+    uint32_t getSreamsCount();
     // 丢掉缓冲
     bool flush();
-    // 设置有效的流索引
-    void setStreamIndex(int stream_index);
     // 获取流信息
     AVStream * getStreamInfo(int stream_index);
     // 读包
-    bool readPacket(int stream_index, AVPacket * pkt);
+    bool readPacket(AVPacket * pkt);
+    // seek
+    bool seek(int stream_index, int64_t timestamp, int flags);
 
 protected:
     // 处理网络流
@@ -47,10 +56,12 @@ protected:
     // 获取扩展参数key和value
     bool parseExtraParams(const std::string & extra);
 
-    // 读包线程
-    void readPackeThr();
+private:
+    bool processPacket(const AVPacket & pkt, MediaPlayerStream & st);
 
 private:
+    // 
+    bool _ts_discont = false;
     // 输入url
     std::string _url;
 
@@ -58,11 +69,12 @@ private:
     int64_t _latest_ms = 0;
     // 超时 默认10000 单位：毫秒(ms)
     int64_t _timeout_ms = 10000;
+    // 最大ts offset
+    int64_t _ts_offset = 0;
+
+    // 流信息集合
+    std::vector<MediaPlayerStream> _streams;
 
     // 上下文
     AVFormatContext * _fmt_ctx = nullptr;
-    // 流信息
-    std::vector<AVStream *> _streams;
-    // 包信息
-    std::unordered_map<int, std::queue<AVPacket>> _stream_targets;
 };

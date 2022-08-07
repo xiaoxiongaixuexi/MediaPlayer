@@ -35,6 +35,7 @@ typedef struct _audio_info_t
     uint8_t * data;
 } audio_info_t;
 
+class CMediaPlayerDemux;
 class CVideoRescalerImpl;
 class CAudioRescalerImpl;
 class CAVDecoderImpl;
@@ -176,7 +177,8 @@ private:
     // 视频像素格式
     AVPixelFormat _pix_fmt = AVPixelFormat::AV_PIX_FMT_NONE;
     // 输入流上下文
-    AVFormatContext * _fmt_ctx = nullptr;
+    //AVFormatContext * _fmt_ctx = nullptr;
+    CMediaPlayerDemux * _demux_ctx = nullptr;
 
     // 屏幕宽度
     int _wnd_width = 0;

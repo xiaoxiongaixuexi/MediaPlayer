@@ -75,7 +75,7 @@
     <ClInclude Include="..\..\src\utils\MediaPlayerRecord.h">
       <Filter>源文件\src\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\demux\MediaPlayerDemux.h">
+    <ClInclude Include="..\..\src\demux\MediaPlayerDemuxFfmpeg.h">
       <Filter>源文件\src\demux</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\utils\MediaPlayerQueue.h">
@@ -92,6 +92,12 @@
     </ClInclude>
     <ClInclude Include="MediaPlayerLinkDlg.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mux\MediaPlayerMux.h">
+      <Filter>源文件\src\mux</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\encode\MediaPlayerEncoder.h">
+      <Filter>源文件\src\encode</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -119,7 +125,7 @@
     <ClCompile Include="..\..\src\utils\MediaPlayerRecord.cpp">
       <Filter>源文件\src\utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\demux\MediaPlayerDemux.cpp">
+    <ClCompile Include="..\..\src\demux\MediaPlayerDemuxFfmpeg.cpp">
       <Filter>源文件\src\demux</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\render\AudioRenderSDL.cpp">
@@ -133,6 +139,12 @@
     </ClCompile>
     <ClCompile Include="MediaPlayerLinkDlg.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mux\MediaPlayerMux.cpp">
+      <Filter>源文件\src\mux</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\encode\MediaPlayerEncoder.cpp">
+      <Filter>源文件\src\encode</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
