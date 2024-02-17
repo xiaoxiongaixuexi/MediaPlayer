@@ -19,15 +19,20 @@ public:
     bool create(const AVCodecParameters * codecpar);
 
     // 销毁解码器
-    void destroy();
+    void destroy(bool flag = true);
 
     // 发送到解码器
     bool send(const AVPacket * pkt);
 
     // 从解码器接收
-    bool recv(bool * got, AVFrame * frm);
+    bool recv(bool & got, AVFrame * frm);
+
+    // 重开解码器
+    bool reopen();
 
 private:
+    // 解码器参数
+    AVCodecParameters * _codec_par = nullptr;
     // 解码器上下文
     AVCodecContext * _codec_ctx = nullptr;
 };

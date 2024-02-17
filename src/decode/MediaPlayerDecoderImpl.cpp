@@ -58,16 +58,38 @@ bool CAVDecoderImpl::create(const AVCodecParameters * codecpar)
         return false;
     }
 
+    _codec_par = avcodec_parameters_alloc();
+    if (nullptr == _codec_par)
+    {
+        log_msg_warn("avcodec_parameters_alloc failed.");
+        return true;
+    }
+
+    ret = avcodec_parameters_copy(_codec_par, codecpar);
+    if (ret < 0)
+    {
+        char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+        av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
+        log_msg_warn("avcodec_parameters_copy failed, err: %s", buff);
+        _codec_par = nullptr;
+    }
+
     return true;
 }
 
-void CAVDecoderImpl::destroy()
+void CAVDecoderImpl::destroy(const bool flag)
 {
     if (nullptr != _codec_ctx)
     {
         avcodec_close(_codec_ctx);
         avcodec_free_context(&_codec_ctx);
         _codec_ctx = nullptr;
+    }
+
+    if (nullptr != _codec_par && flag)
+    {
+        avcodec_parameters_free(&_codec_par);
+        _codec_par = nullptr;
     }
 }
 
@@ -91,7 +113,7 @@ bool CAVDecoderImpl::send(const AVPacket * pkt)
     return true;
 }
 
-bool CAVDecoderImpl::recv(bool * got, AVFrame * frm)
+bool CAVDecoderImpl::recv(bool & got, AVFrame * frm)
 {
     if (nullptr == _codec_ctx)
     {
@@ -110,19 +132,30 @@ bool CAVDecoderImpl::recv(bool * got, AVFrame * frm)
     {
         if (ret == AVERROR(EAGAIN))
         {
-            if (nullptr != got)
-                *got = false;
+            got = false;
             return true;
         }
 
         char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
         av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-        log_msg_warn("avcodec_receive_frame failed, err code: %d, msg: %s", ret, buff);
+        log_msg_warn("avcodec_receive_frame failed for %s", buff);
         return false;
     }
 
-    if (nullptr != got)
-        *got = true;
+    got = true;
 
     return true;
+}
+
+bool CAVDecoderImpl::reopen()
+{
+    if (nullptr == _codec_par)
+    {
+        log_msg_warn("Codec params is nullptr.");
+        return false;
+    }
+
+    destroy(false);
+
+    return create(_codec_par);
 }
