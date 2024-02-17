@@ -11,6 +11,8 @@
 #include "afxdialogex.h"
 #include <io.h>
 
+#include "../src/MediaPlayerImpl.h"
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -272,7 +274,8 @@ HBRUSH CMediaPlayerDlg::OnCtlColor(CDC * pDC, CWnd * pWnd, UINT nCtlColor)
 
 void CMediaPlayerDlg::OnBnClickedBtnCtrl()
 {
-    if (nullptr == m_pMediaPtr)
+    auto & media = CMediaPlayerImpl::getInstance();
+    if (!media.opened())
     {
         MessageBox(_T("没有可播放的文件"), _T("提示"), MB_OK | MB_ICONWARNING);
         return;
@@ -284,7 +287,7 @@ void CMediaPlayerDlg::OnBnClickedBtnCtrl()
         CWnd * pScreen = GetDlgItem(IDC_STC_SCREEN);
         pScreen->GetClientRect(&rect);
 
-        if (!m_pMediaPtr->start(pScreen->GetSafeHwnd(), rect.Width(), rect.Height()))
+        if (!media.start(pScreen->GetSafeHwnd(), rect.Width(), rect.Height()))
         {
             MessageBox(_T("播放文件失败！"), _T("提示"), MB_OK | MB_ICONWARNING);
             return;
@@ -293,7 +296,7 @@ void CMediaPlayerDlg::OnBnClickedBtnCtrl()
     }
     else
     {
-        m_pMediaPtr->pause();
+        media.pause();
         m_btnCtrl.SetIcon(m_icoPause);
     }
     m_blPlaying = !m_blPlaying;
@@ -302,11 +305,10 @@ void CMediaPlayerDlg::OnBnClickedBtnCtrl()
 
 void CMediaPlayerDlg::OnBnClickedBtnStop()
 {
-    if (m_pMediaPtr)
+    auto & media = CMediaPlayerImpl::getInstance();
+    if (media.opened())
     {
-        m_pMediaPtr->close();
-        delete m_pMediaPtr;
-        m_pMediaPtr = nullptr;
+        media.close();
     }
     m_blPlaying = false;
     m_btnCtrl.SetIcon(m_icoPause);
@@ -317,70 +319,56 @@ void CMediaPlayerDlg::OnBnClickedBtnStop()
 
 void CMediaPlayerDlg::OnBnClickedBtnForward()
 {
-    if (m_pMediaPtr)
-    {
-        m_pMediaPtr->forward();
-    }
+    CMediaPlayerImpl::getInstance().forward();
 }
 
 
 void CMediaPlayerDlg::OnBnClickedBtnBackward()
 {
-    if (m_pMediaPtr)
-    {
-        m_pMediaPtr->backward();
-    }
+    CMediaPlayerImpl::getInstance().backward();
 }
 
 
 void CMediaPlayerDlg::OnBnClickedBtnOpen()
 {
-    if (m_pMediaPtr)
+    CString strExtFilter = _T("MP4|*.mp4|MKV|*.mkv|MPEGTS|*.ts|All Files|*.*||");
+    CFileDialog dlg(TRUE, _T("MP4"), nullptr, OFN_READONLY | OFN_FILEMUSTEXIST, strExtFilter);
+    if (IDOK != dlg.DoModal())
     {
-        MessageBox(_T("请先关闭当前文件！"), _T("警告"), MB_OK | MB_ICONWARNING);
         return;
     }
 
-    CString strExtFilter = _T("MKV|*.mkv|MP4|*.mp4|All Files|*.*||");
-    CFileDialog dlg(TRUE, _T("MKV"), nullptr, OFN_READONLY | OFN_FILEMUSTEXIST, strExtFilter);
-    if (IDOK == dlg.DoModal())
+    CString strFilePath = dlg.GetPathName();
+    auto & media = CMediaPlayerImpl::getInstance();
+
+    if (media.opened())
     {
-        CString strFilePath = dlg.GetPathName();
-
-        m_pMediaPtr = new CMediaPlayerImpl();
-        if (nullptr == m_pMediaPtr)
-        {
-            MessageBox(_T("打开文件失败！"), _T("提示"), MB_OK | MB_ICONWARNING);
-            return;
-        }
-
-        char filename[MAX_PATH] = { 0 };
-        memcpy(filename, strFilePath.GetBuffer(strFilePath.GetLength()), MAX_PATH);
-        m_strFilePath = filename;
-
-        if (!m_pMediaPtr->open(filename))
-        {
-            MessageBox(_T("打开文件失败！"), _T("提示"), MB_OK | MB_ICONWARNING);
-            delete m_pMediaPtr;
-            m_pMediaPtr = nullptr;
-            return;
-        }
-
-        int64_t duration = m_pMediaPtr->getDuration();
-        if (duration <= 0)
-        {
-            MessageBox(_T("获取文件时长失败！"), _T("提示"), MB_OK | MB_ICONWARNING);
-            return;
-        }
-
-        CString strVideoDuration;
-        strTime(duration, 0, strVideoDuration);
-        m_stcDuration.SetWindowText(strVideoDuration);
-        m_sldProgress.SetRange(0, static_cast<int>(duration));
-        m_sldProgress.SetTicFreq(1);
-
-        SetTimer(1, 100, nullptr);
+        OnBnClickedBtnStop();
     }
+
+    m_strFilePath = media_utils_wchar_to_utf8(strFilePath.GetBuffer());
+    if (!media.open(m_strFilePath.c_str()))
+    {
+        MessageBox(_T("打开文件失败！"), _T("提示"), MB_OK | MB_ICONWARNING);
+        return;
+    }
+
+    int64_t duration = media.getDuration();
+    if (duration < 0)
+    {
+        MessageBox(_T("获取文件时长失败！"), _T("提示"), MB_OK | MB_ICONWARNING);
+        return;
+    }
+
+    CString strVideoDuration;
+    strTime(duration, 0, strVideoDuration);
+    m_stcDuration.SetWindowText(strVideoDuration);
+    m_sldProgress.SetRange(0, static_cast<int>(duration));
+    m_sldProgress.SetTicFreq(1);
+
+    SetTimer(1, 100, nullptr);
+
+    OnBnClickedBtnCtrl();
 }
 
 
@@ -432,10 +420,7 @@ void CMediaPlayerDlg::OnBnClickedBtnVoice()
 
     SendMessage(WM_PAINT, 0, 0);
 
-    if (m_pMediaPtr)
-    {
-        m_pMediaPtr->setVolume(iVolume);
-    }
+    CMediaPlayerImpl::getInstance().setVolume(iVolume);
 }
 
 
@@ -447,10 +432,7 @@ void CMediaPlayerDlg::OnNMCustomdrawSldVoice(NMHDR * pNMHDR, LRESULT * pResult)
         m_btnVoice.SetIcon(m_icoSilence);
     else
         m_btnVoice.SetIcon(m_icoVoice);
-    if (m_pMediaPtr)
-    {
-        m_pMediaPtr->setVolume(iVoice);
-    }
+    CMediaPlayerImpl::getInstance().setVolume(iVoice);
 
     *pResult = 0;
 }
@@ -460,10 +442,7 @@ void CMediaPlayerDlg::OnNMReleasedcaptureSldProgress(NMHDR * pNMHDR, LRESULT * p
 {
     // TODO: 在此添加控件通知处理程序代码
     int iPos = m_sldProgress.GetPos();
-    if (m_pMediaPtr)
-    {
-        m_pMediaPtr->setPosition(iPos);
-    }
+    CMediaPlayerImpl::getInstance().setPosition(iPos);
 
     *pResult = 0;
 }
@@ -473,10 +452,13 @@ void CMediaPlayerDlg::OnTimer(UINT_PTR nIDEvent)
 {
     if (nIDEvent == 1)
     {
-        if (m_pMediaPtr)
+        auto & media = CMediaPlayerImpl::getInstance();
+        if (media.opened())
         {
-            int64_t pos = m_pMediaPtr->getPosition();
-            int64_t duration = m_pMediaPtr->getDuration();
+            int64_t pos = media.getPosition();
+            if (pos < 0)
+                return;
+            int64_t duration = media.getDuration();
             m_sldProgress.SetPos(static_cast<int>(pos));
             CString strVideoDuration;
             strTime(duration, pos, strVideoDuration);
@@ -634,4 +616,12 @@ void CMediaPlayerDlg::OnBnClickedBtnLink()
     }
 
     // TODO:打开链接
+}
+
+
+void CMediaPlayerDlg::OnClose()
+{
+    // TODO: 在此添加消息处理程序代码和/或调用默认值
+    CMediaPlayerImpl::getInstance().close();
+    CDialogEx::OnClose();
 }

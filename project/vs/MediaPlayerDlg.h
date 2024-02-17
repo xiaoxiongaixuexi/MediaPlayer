@@ -5,7 +5,6 @@
 #pragma once
 
 #include <string>
-#include "../src/MediaPlayerImpl.h"
 
 #define BACK_COLOR RGB(16, 16, 16)     // 背景颜色
 #define FONT_COLOR RGB(255, 255, 255)  // 字体颜色
@@ -78,9 +77,9 @@ private:
     CButton m_btnLast;
     CButton m_btnNext;
     CButton m_btnVoice;
-    CMediaPlayerImpl * m_pMediaPtr = nullptr;
     // 文件路径
     std::string m_strFilePath = "";
+    std::string m_strFilePath;
     CSliderCtrl m_sldProgress;
     CSliderCtrl m_sldVoice;
 public:

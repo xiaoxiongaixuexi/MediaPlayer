@@ -44,10 +44,15 @@ class CVideoRendererSDL;
 class CMediaPlayerImpl
 {
 public:
-    CMediaPlayerImpl() = default;
-    ~CMediaPlayerImpl() = default;
+    static CMediaPlayerImpl & getInstance()
+    {
+        static CMediaPlayerImpl instance;
+        return instance;
+    }
 
-public:
+    // 是否有开着的文件
+    bool opened() const;
+
     // 打开文件
     bool open(const char * url);
 
@@ -113,6 +118,13 @@ protected:
     void dealAudioPacketsThr();
 
 private:
+    CMediaPlayerImpl() = default;
+    ~CMediaPlayerImpl() = default;
+    // 删除三大默认成员函数，赋值、复制和地址运算
+    CMediaPlayerImpl(const CMediaPlayerImpl &) = delete;
+    CMediaPlayerImpl & operator=(const CMediaPlayerImpl &) = delete;
+    CMediaPlayerImpl * operator&() = delete;
+
     // 是否初始化
     std::atomic_bool _is_init = { false };
 
