@@ -1,5 +1,4 @@
 ﻿#include "MediaPlayerImpl.h"
-#include "SDL/SDL.h"
 #include "os_log.h"
 #include "demux/MediaPlayerDemuxFfmpeg.h"
 
@@ -7,23 +6,11 @@
 #include "rescaler/VideoRescalerImpl.h"
 #include "rescaler/AudioRescalerImpl.h"
 #include "render/VideoRenderSDL.h"
+#include "render/AudioRenderSDL.h"
 
-static void readAudioDataCb(void * udata, uint8_t * data, int len)
+bool CMediaPlayerImpl::opened() const
 {
-    auto * audio_info = reinterpret_cast<audio_info_t *>(udata);
-    if (nullptr == audio_info || 0 == audio_info->len)
-    {
-        return;
-    }
-
-    SDL_memset(data, 0, len);
-    int tmp_len = len;
-    if (tmp_len > audio_info->len)
-        tmp_len = audio_info->len;
-
-    SDL_MixAudioFormat(data, audio_info->data + audio_info->pos, AUDIO_S16, len, audio_info->volume);
-    audio_info->pos += len;
-    audio_info->len -= len;
+    return _is_init;
 }
 
 bool CMediaPlayerImpl::open(const char * url)
@@ -280,12 +267,15 @@ bool CMediaPlayerImpl::setVolume(const int volume)
         return false;
     }
 
+    if (nullptr == _audio_render)
+        return false;
+
     if (volume <= 0)
-        _volume = 0;
+        _audio_render->setVolume(0);
     else if (volume >= 128)
-        _volume = 128;
+        _audio_render->setVolume(128);
     else
-        _volume = volume;
+        _audio_render->setVolume(volume);
 
     return true;
 }
@@ -438,17 +428,17 @@ bool CMediaPlayerImpl::createVideoPlayer(const void * wnd, const int width, cons
         return true;
     }
 
-    _video_player = new(std::nothrow) CVideoRendererSDL();
-    if (nullptr == _video_player)
+    _video_render = new(std::nothrow) CVideoRendererSDL();
+    if (nullptr == _video_render)
     {
         log_msg_error("new(std::nothrow) CVideoRendererSDL() failed");
         return false;
     }
-    if (!_video_player->create(wnd, width, height))
+    if (!_video_render->create(wnd, width, height))
     {
         log_msg_warn("Create video player failed!");
-        delete _video_player;
-        _video_player = nullptr;
+        delete _video_render;
+        _video_render = nullptr;
         return false;
     }
 
@@ -457,11 +447,11 @@ bool CMediaPlayerImpl::createVideoPlayer(const void * wnd, const int width, cons
 
 void CMediaPlayerImpl::destoryVideoPlayer()
 {
-    if (nullptr != _video_player)
+    if (nullptr != _video_render)
     {
-        _video_player->destroy();
-        delete _video_player;
-        _video_player = nullptr;
+        _video_render->destroy();
+        delete _video_render;
+        _video_render = nullptr;
     }
 }
 
@@ -472,43 +462,26 @@ bool CMediaPlayerImpl::createAudioPlayer()
         return true;
     }
 
-    _audio_info = static_cast<audio_info_t *>(malloc(sizeof(audio_info_t)));
-    if (nullptr == _audio_info)
+    _audio_render = new(std::nothrow) CAudioRendererSDL();
+    if (nullptr == _audio_render)
     {
-        const int code = errno;
-        log_msg_error("malloc failed for %s", strerror(code));
+        log_msg_error("Create audio render instance failed!");
         return false;
     }
-    _audio_info->data = nullptr;
-    _audio_info->volume = _volume.load();
-    _audio_info->len = _audio_info->pos = 0;
 
-    SDL_AudioSpec audio_player;
-    audio_player.freq = _audio_stream->codecpar->sample_rate;
-    audio_player.format = AUDIO_S16SYS;
-    audio_player.channels = _audio_stream->codecpar->channels;
-    audio_player.silence = 0;
-    audio_player.samples = _audio_stream->codecpar->frame_size;
-    audio_player.callback = readAudioDataCb;
-    audio_player.userdata = _audio_info;
-    if (SDL_OpenAudio(&audio_player, nullptr) < 0)
-    {
-        log_msg_warn("SDL_OpenAudio failed!");
-        return false;
-    }
-    SDL_PauseAudio(0);
+    const auto & cp = _audio_stream->codecpar;
+    return _audio_render->create(cp->sample_rate, cp->channels, cp->frame_size);
 
     return true;
 }
 
 void CMediaPlayerImpl::destoryAudioPlayer()
 {
-    SDL_CloseAudio();
-
-    if (_audio_info)
+    if (nullptr != _audio_render)
     {
-        free(_audio_info);
-        _audio_info = nullptr;
+        _audio_render->destroy();
+        delete _audio_render;
+        _audio_render = nullptr;
     }
 }
 
@@ -587,7 +560,7 @@ void CMediaPlayerImpl::dealVideoPacketsThr()
         return;
     }
 
-    if (nullptr == _video_player)
+    if (nullptr == _video_render)
     {
         log_msg_warn("No available video player!");
         return;
@@ -639,7 +612,7 @@ void CMediaPlayerImpl::dealVideoPacketsThr()
                 continue;
             }
 
-            _video_player->setData(yuv_frm.data, yuv_frm.linesize);
+            _video_render->setData(yuv_frm.data, yuv_frm.linesize);
 
             double pts = frm.best_effort_timestamp == AV_NOPTS_VALUE ? 0.0 : frm.best_effort_timestamp;
             pts = static_cast<double>(pts) * av_q2d(_video_stream->time_base);
@@ -697,15 +670,12 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
         {
             if (frm.best_effort_timestamp != AV_NOPTS_VALUE)
                 _audio_clock = static_cast<double>(frm.best_effort_timestamp) * av_q2d(_audio_stream->time_base);
-            memset(_audio_info, 0, sizeof(audio_info_t));
             if (_audio_rescaler->rescale(&frm, &out_buff, &out_buff_size))
             {
-                _audio_info->data = out_buff;
-                _audio_info->len = out_buff_size;
-                _audio_info->pos = 0;
+                _audio_render->fillData(out_buff, out_buff_size);
             }
-            _audio_info->volume = _volume.load();
-            while (_audio_info->len > 0)
+
+            while (!_audio_render->finished())
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }

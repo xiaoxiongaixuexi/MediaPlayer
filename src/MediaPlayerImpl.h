@@ -27,19 +27,12 @@ typedef enum _MEDIA_PLAYER_SPEED
     MEDIA_PLAYER_SPEED_MAX        // 封顶
 } MEDIA_PLAYER_SPEED;
 
-typedef struct _audio_info_t
-{
-    int volume;
-    int len;
-    int pos;         // 播放位置
-    uint8_t * data;
-} audio_info_t;
-
 class CMediaPlayerDemux;
+class CAVDecoderImpl;
 class CVideoRescalerImpl;
 class CAudioRescalerImpl;
-class CAVDecoderImpl;
 class CVideoRendererSDL;
+class CAudioRendererSDL;
 
 class CMediaPlayerImpl
 {
@@ -183,6 +176,8 @@ private:
     CAVDecoderImpl * _audio_decoder = nullptr;
     // 音频转换器
     CAudioRescalerImpl * _audio_rescaler = nullptr;
+    // 音频渲染器
+    CAudioRendererSDL * _audio_render = nullptr;
     // 音频时钟
     std::atomic<double> _audio_clock = { 0.0 };
 
@@ -201,15 +196,11 @@ private:
     // 视频帧高度
     int _frm_height = 0;
 
-    audio_info_t * _audio_info = nullptr;
-
     // 视频包队列
     CMediaPlayerQueue<AVPacket> _video_queue;
     // 音频包队列
     CMediaPlayerQueue<AVPacket> _audio_queue;
 
-    // 音频音量
-    std::atomic_int _volume = { 64 };
     // 文件时长
     std::atomic_int64_t _duration = { -1 };
     // 播放倍速 默认正常倍速
