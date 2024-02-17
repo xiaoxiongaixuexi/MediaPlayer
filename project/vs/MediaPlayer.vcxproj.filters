@@ -28,14 +28,8 @@
     <Filter Include="源文件\src\mux">
       <UniqueIdentifier>{ace2593b-e1d5-42f2-8561-df6811ab7324}</UniqueIdentifier>
     </Filter>
-    <Filter Include="源文件\src\encode">
-      <UniqueIdentifier>{fea34a19-d4ab-41aa-83ba-66bc9e5abeb0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="源文件\src\decode">
       <UniqueIdentifier>{003a1519-00ab-44e8-a842-a660c0b2b073}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="源文件\src\filter">
-      <UniqueIdentifier>{1265a55e-55ca-431f-9869-9381b9b685ac}</UniqueIdentifier>
     </Filter>
     <Filter Include="源文件\src\render">
       <UniqueIdentifier>{f025b4d6-86ee-421a-a753-2940590a3bda}</UniqueIdentifier>
@@ -96,9 +90,6 @@
     <ClInclude Include="..\..\src\mux\MediaPlayerMux.h">
       <Filter>源文件\src\mux</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\encode\MediaPlayerEncoder.h">
-      <Filter>源文件\src\encode</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MediaPlayer.cpp">
@@ -142,9 +133,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\mux\MediaPlayerMux.cpp">
       <Filter>源文件\src\mux</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\encode\MediaPlayerEncoder.cpp">
-      <Filter>源文件\src\encode</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
