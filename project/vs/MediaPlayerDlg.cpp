@@ -133,16 +133,17 @@ BOOL CMediaPlayerDlg::OnInitDialog()
     SetIcon(m_hIcon, FALSE);        // 设置小图标
 
     // TODO: 在此添加额外的初始化代码
-    const char * log_name = "MediaPlayer.log";
-    if (0 == _access(log_name, 0))
-        remove(log_name);
-    log_msg_init(log_name, LOG_LEVEL_INFO);
+    std::string work_path = media_utils_get_work_path();
+    std::string log_path = work_path + "MediaPlayer.log";
+    if (0 == _access(log_path.c_str(), 0))
+        remove(log_path.c_str());
+    log_msg_init(log_path.c_str(), LOG_LEVEL_INFO);
     atexit(log_msg_uninit);
 
     m_toolTip.Create(this);
     m_toolTip.SetDelayTime(TTDT_INITIAL, 10);
-    m_toolTip.SetDelayTime(TTDT_AUTOPOP, 30000);
     m_toolTip.SetMaxTipWidth(200);
+    m_toolTip.SetTipBkColor(BACK_COLOR);
     m_toolTip.SetTipTextColor(FONT_COLOR);
 
     m_toolTip.AddTool(GetDlgItem(IDC_BTN_CTRL), _T("播放/暂停"));
