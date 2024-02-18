@@ -121,16 +121,14 @@ private:
     // 是否初始化
     std::atomic_bool _is_init = { false };
 
-    // 是否文件结束
-    std::atomic_bool _is_over = { false };
     // 是否播放中
     std::atomic_bool _is_playing = { false };
     // 是否暂停中
     std::atomic_bool _is_pause = { false };
     // 是否跳转播放位置
     std::atomic_bool _is_skip = { false };
-    // 当前播放位置
-    std::atomic_int32_t _cur_pos = { 0 };
+    // 目标播放位置
+    std::atomic_int32_t _dst_pos = { 0 };
 
     // 数据包线程锁
     std::mutex _packets_mtx;
@@ -163,8 +161,10 @@ private:
     CAVDecoderImpl * _video_decoder = nullptr;
     // 视频转换器
     CVideoRescalerImpl * _video_rescaler = nullptr;
-    // 视频播放器
-    CVideoRendererSDL * _video_player = nullptr;
+    // 视频渲染器
+    CVideoRendererSDL * _video_render = nullptr;
+    //
+    std::atomic_bool _video_done = { false };
 
     // 音频流索引数组
     std::vector<int> _audio_index;
@@ -180,12 +180,13 @@ private:
     CAudioRendererSDL * _audio_render = nullptr;
     // 音频时钟
     std::atomic<double> _audio_clock = { 0.0 };
+    // 
+    std::atomic_bool _audio_done = { false };
 
     // 视频像素格式
     AVPixelFormat _pix_fmt = AVPixelFormat::AV_PIX_FMT_NONE;
     // 输入流上下文
-    //AVFormatContext * _fmt_ctx = nullptr;
-    CMediaPlayerDemux * _demux_ctx = nullptr;
+    CMediaPlayerDemux * _ctx = nullptr;
 
     // 屏幕宽度
     int _wnd_width = 0;
@@ -202,7 +203,7 @@ private:
     CMediaPlayerQueue<AVPacket> _audio_queue;
 
     // 文件时长
-    std::atomic_int64_t _duration = { -1 };
+    std::atomic_int64_t _duration_sec = { -1 };
     // 播放倍速 默认正常倍速
     MEDIA_PLAYER_SPEED _speed = MEDIA_PLAYER_SPEED_NORMAL;
 };

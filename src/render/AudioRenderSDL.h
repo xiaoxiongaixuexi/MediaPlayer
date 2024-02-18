@@ -26,6 +26,9 @@ public:
     // 设置音量
     void setVolume(int volume);
 
+    // 静音
+    void mute(bool flag);
+
     // 填充数据
     void fillData(uint8_t * data, int len);
 

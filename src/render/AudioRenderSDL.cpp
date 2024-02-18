@@ -66,7 +66,11 @@ void CAudioRendererSDL::setVolume(const int volume)
         _cache->volume = volume;
 }
 
-// 填充数据
+void CAudioRendererSDL::mute(const bool flag)
+{
+    SDL_PauseAudio(flag);
+}
+
 void CAudioRendererSDL::fillData(uint8_t * data, int len)
 {
     if (nullptr != _cache)

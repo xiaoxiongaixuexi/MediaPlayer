@@ -37,7 +37,7 @@ public:
     // 获取文件时长
     int64_t getDuration();
     // 获取流个数
-    uint32_t getSreamsCount();
+    uint32_t getStreamsCount();
     // 丢掉缓冲
     bool flush();
     // 获取流信息
@@ -45,7 +45,7 @@ public:
     // 读包
     bool readPacket(AVPacket * pkt);
     // seek
-    bool seek(int stream_index, int64_t timestamp, int flags);
+    bool seek(int stream_index, int64_t timestamp);
 
 protected:
     // 处理网络流
@@ -67,8 +67,8 @@ private:
 
     // 最近一次时间
     int64_t _latest_ms = 0;
-    // 超时 默认10000 单位：毫秒(ms)
-    int64_t _timeout_ms = 10000;
+    // 超时 默认5000 单位：毫秒(ms)
+    int64_t _timeout_ms = 5000;
     // 最大ts offset
     int64_t _ts_offset = 0;
 

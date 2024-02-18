@@ -316,6 +316,7 @@ void CMediaPlayerDlg::OnBnClickedBtnStop()
     m_btnCtrl.SetIcon(m_icoPause);
     m_stcDuration.SetWindowText(_T("00:00:00/00:00:00"));
     GetDlgItem(IDC_STC_SCREEN)->ShowWindow(TRUE);
+    m_sldProgress.SetPos(0);
 }
 
 

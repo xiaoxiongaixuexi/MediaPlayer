@@ -101,7 +101,7 @@ int64_t CMediaPlayerDemux::getDuration()
     return 0;
 }
 
-uint32_t CMediaPlayerDemux::getSreamsCount()
+uint32_t CMediaPlayerDemux::getStreamsCount()
 {
     if (nullptr == _fmt_ctx)
     {
@@ -209,9 +209,9 @@ bool CMediaPlayerDemux::readPacket(AVPacket * pkt)
     return true;
 }
 
-bool CMediaPlayerDemux::seek(int stream_index, int64_t timestamp, int flags)
+bool CMediaPlayerDemux::seek(int stream_index, int64_t timestamp)
 {
-    int ret = av_seek_frame(_fmt_ctx, stream_index, timestamp, flags);
+    int ret = av_seek_frame(_fmt_ctx, stream_index, timestamp, AVSEEK_FLAG_BACKWARD);
     if (ret < 0)
     {
         char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
@@ -294,7 +294,7 @@ bool CMediaPlayerDemux::processPacket(const AVPacket & pkt, MediaPlayerStream & 
     case AVMEDIA_TYPE_VIDEO:
         if (pkt.duration)
             st.next_dts += av_rescale_q(pkt.duration, st.si->time_base, av_make_q(1, AV_TIME_BASE));
-        else
+        else if (0 != codec->framerate.num * codec->framerate.den)
         {
             const auto * codec_parser = av_stream_get_parser(st.si);
             int ticks = codec_parser ? codec_parser->repeat_pict + 1 : codec->ticks_per_frame;
