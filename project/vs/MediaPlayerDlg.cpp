@@ -8,6 +8,7 @@
 #include "MediaPlayerDlg.h"
 #include "MediaPlayerLinkDlg.h"
 #include "os_log.h"
+#include "utils/MediaPlayerUtils.h"
 #include "afxdialogex.h"
 #include <io.h>
 
@@ -164,6 +165,9 @@ BOOL CMediaPlayerDlg::OnInitDialog()
     m_lstRecord.InsertItem(1, _T("张韶涵-阿刁"));
     m_brush.CreateSolidBrush(BACK_COLOR);
     m_stcDuration.SetFont(&m_fontSize);
+    m_sldProgress.SetPageSize(1);
+    m_sldProgress.SetTic(1);
+    m_sldProgress.SetTicFreq(1);
 
     CRect btnRect;
     m_btnOpen.GetWindowRect(&btnRect);
@@ -367,7 +371,6 @@ void CMediaPlayerDlg::OnBnClickedBtnOpen()
     strTime(duration, 0, strVideoDuration);
     m_stcDuration.SetWindowText(strVideoDuration);
     m_sldProgress.SetRange(0, static_cast<int>(duration));
-    m_sldProgress.SetTicFreq(1);
 
     SetTimer(1, 100, nullptr);
 
@@ -444,8 +447,21 @@ void CMediaPlayerDlg::OnNMCustomdrawSldVoice(NMHDR * pNMHDR, LRESULT * pResult)
 void CMediaPlayerDlg::OnNMReleasedcaptureSldProgress(NMHDR * pNMHDR, LRESULT * pResult)
 {
     // TODO: 在此添加控件通知处理程序代码
-    int iPos = m_sldProgress.GetPos();
-    CMediaPlayerImpl::getInstance().setPosition(iPos);
+    CRect rect;
+    m_sldProgress.GetWindowRect(&rect);
+
+    POINT pt;
+    GetCursorPos(&pt);
+
+    const auto width = rect.Width();
+    const auto tmp = pt.x - rect.left;
+    const auto radix = static_cast<double>(tmp) / static_cast<double>(width);
+    const auto range = m_sldProgress.GetRangeMax();
+    int pos = static_cast<int>(ceil(static_cast<double>(range) * radix));
+    if (pos > range)
+        pos = range;
+    m_sldProgress.SetPos(pos);
+    CMediaPlayerImpl::getInstance().setPosition(pos);
 
     *pResult = 0;
 }
@@ -470,8 +486,6 @@ void CMediaPlayerDlg::OnTimer(UINT_PTR nIDEvent)
             {
                 // 播放到最后置为播放结束
                 OnBnClickedBtnStop();
-                //m_blPlaying = false;
-                //m_btnCtrl.SetIcon(m_icoPause);
             }
         }
     }
