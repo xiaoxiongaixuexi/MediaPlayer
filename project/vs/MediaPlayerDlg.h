@@ -89,4 +89,5 @@ public:
     void strTime(int64_t duration, int64_t ts, CString & str);
     afx_msg void OnSize(UINT nType, int cx, int cy);
     afx_msg void OnBnClickedBtnLink();
+    afx_msg void OnClose();
 };

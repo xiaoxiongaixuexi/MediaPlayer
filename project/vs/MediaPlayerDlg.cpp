@@ -97,6 +97,7 @@ BEGIN_MESSAGE_MAP(CMediaPlayerDlg, CDialogEx)
     ON_WM_TIMER()
     ON_WM_SIZE()
     ON_BN_CLICKED(IDC_BTN_LINK, &CMediaPlayerDlg::OnBnClickedBtnLink)
+    ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
