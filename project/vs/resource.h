@@ -18,6 +18,7 @@
 #define IDI_ICO_SILENCE                 138
 #define IDI_ICON5                       139
 #define IDI_ICO_VOICE                   139
+#define IDR_MNU_RECORD                  140
 #define IDI_ICO_LINK                    142
 #define IDD_DLG_LINK                    143
 #define IDC_STC_SCREEN                  1001
@@ -38,6 +39,11 @@
 #define IDC_STC_NET_LINK                1020
 #define IDC_BTN_LINK_CONFIRM            1021
 #define IDC_BTN_LINK_CANCEL             1022
+#define IDC_BTN_RECORD_OPEN             32780
+#define IDC_BTN_RECORD_ADD              32781
+#define IDC_BTN_RECORD_DELETE           32782
+#define IDC_BTN_RECORD_EDIT             32783
+#define IDC_BTN_RECORD_INFO             32784
 
 // Next default values for new objects
 // 

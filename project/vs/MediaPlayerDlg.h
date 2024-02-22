@@ -78,7 +78,6 @@ private:
     CButton m_btnNext;
     CButton m_btnVoice;
     // 文件路径
-    std::string m_strFilePath = "";
     std::string m_strFilePath;
     CSliderCtrl m_sldProgress;
     CSliderCtrl m_sldVoice;
@@ -87,6 +86,9 @@ public:
     afx_msg void OnNMReleasedcaptureSldProgress(NMHDR * pNMHDR, LRESULT * pResult);
     afx_msg void OnTimer(UINT_PTR nIDEvent);
     void strTime(int64_t duration, int64_t ts, CString & str);
+    afx_msg void OnNMDblclkLstPlay(NMHDR * pNMHDR, LRESULT * pResult);
+    afx_msg void OnNMRClickLstPlay(NMHDR * pNMHDR, LRESULT * pResult);
+    afx_msg void OnBtnRecordOpen();
     afx_msg void OnSize(UINT nType, int cx, int cy);
     afx_msg void OnBnClickedBtnLink();
     afx_msg void OnClose();

@@ -96,6 +96,9 @@ BEGIN_MESSAGE_MAP(CMediaPlayerDlg, CDialogEx)
     ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLD_VOICE, &CMediaPlayerDlg::OnNMCustomdrawSldVoice)
     ON_NOTIFY(NM_RELEASEDCAPTURE, IDC_SLD_PROGRESS, &CMediaPlayerDlg::OnNMReleasedcaptureSldProgress)
     ON_WM_TIMER()
+    ON_NOTIFY(NM_DBLCLK, IDC_LST_PLAY, &CMediaPlayerDlg::OnNMDblclkLstPlay)
+    ON_NOTIFY(NM_RCLICK, IDC_LST_PLAY, &CMediaPlayerDlg::OnNMRClickLstPlay)
+    ON_COMMAND(IDC_BTN_RECORD_OPEN, &CMediaPlayerDlg::OnBtnRecordOpen)
     ON_WM_SIZE()
     ON_BN_CLICKED(IDC_BTN_LINK, &CMediaPlayerDlg::OnBnClickedBtnLink)
     ON_WM_CLOSE()
@@ -503,6 +506,44 @@ void CMediaPlayerDlg::strTime(int64_t duration, int64_t ts, CString & str)
     int t_second = static_cast<int>(ts % 60);
     str.Format(_T("%02d:%02d:%02d/%02d:%02d:%02d"), t_hour, t_minute, t_second, d_hour, d_minute, d_second);
 }
+
+void CMediaPlayerDlg::OnNMDblclkLstPlay(NMHDR * pNMHDR, LRESULT * pResult)
+{
+    LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+    // TODO: 在此添加控件通知处理程序代码
+
+
+
+    *pResult = 0;
+}
+
+
+void CMediaPlayerDlg::OnNMRClickLstPlay(NMHDR * pNMHDR, LRESULT * pResult)
+{
+    LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+    // TODO: 在此添加控件通知处理程序代码
+    int iSelectedItem = pNMItemActivate->iItem;
+    if (iSelectedItem >= 0)
+    {
+        CMenu menu;
+        menu.LoadMenu(IDR_MNU_RECORD);
+        CMenu * pPopup = menu.GetSubMenu(0);
+        CPoint m_point;
+        GetCursorPos(&m_point);
+        pPopup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, m_point.x, m_point.y, this);
+    }
+
+    *pResult = 0;
+}
+
+
+void CMediaPlayerDlg::OnBtnRecordOpen()
+{
+    // TODO: 在此添加命令处理程序代码
+    MessageBox(_T("Done Here"), _T("提示"), MB_OK | MB_ICONINFORMATION);
+}
+
+
 void CMediaPlayerDlg::OnSize(UINT nType, int cx, int cy)
 {
     CDialogEx::OnSize(nType, cx, cy);
@@ -625,7 +666,7 @@ void CMediaPlayerDlg::OnBnClickedBtnLink()
         return;
     }
 
-    CString strLinkName = dlg.getLinkName();
+    CString strLinkName = dlg.GetLinkName();
     if (strLinkName.IsEmpty())
     {
         MessageBox(_T("输入链接为空！"), _T("警告"), MB_ICONWARNING | MB_OK);
