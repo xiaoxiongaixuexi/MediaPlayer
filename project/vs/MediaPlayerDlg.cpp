@@ -157,6 +157,7 @@ BOOL CMediaPlayerDlg::OnInitDialog()
     m_toolTip.AddTool(GetDlgItem(IDC_BTN_LAST), _T("上一个"));
     m_toolTip.AddTool(GetDlgItem(IDC_BTN_NEXT), _T("下一个"));
     m_toolTip.AddTool(GetDlgItem(IDC_BTN_VOICE), _T("静音 开/关"));
+    m_toolTip.AddTool(GetDlgItem(IDC_BTN_LINK), _T("链接"));
     m_toolTip.AddTool(GetDlgItem(IDC_BTN_OPEN), _T("打开"));
 
     m_fontSize.CreatePointFont(120, _T("微软雅黑"), nullptr);

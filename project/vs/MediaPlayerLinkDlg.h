@@ -22,7 +22,7 @@ protected:
     DECLARE_MESSAGE_MAP()
 public:
     virtual BOOL OnInitDialog();
-    CString getLinkName();
+    CString GetLinkName();
 
 private:
     CEdit m_edtLinkName;

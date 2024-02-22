@@ -66,7 +66,7 @@ void CMediaPlayerLinkDlg::OnBnClickedBtnLinkCancel()
     CDialog::OnCancel();
 }
 
-CString CMediaPlayerLinkDlg::getLinkName()
+CString CMediaPlayerLinkDlg::GetLinkName()
 {
     return m_strLinkName;
 }
