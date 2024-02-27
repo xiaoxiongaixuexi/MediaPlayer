@@ -4,14 +4,26 @@
 bool CAudioRescalerImpl::create(const int64_t out_layout, const int out_fmt, const int out_sample_rate,
                                 const int64_t in_layout, const int in_fmt, const int in_sample_rate, int frame_size)
 {
+    if (in_fmt <= AV_SAMPLE_FMT_NONE || in_fmt >= AV_SAMPLE_FMT_NB)
+    {
+        log_msg_warn("Invalid input format: %d!", out_fmt);
+        return false;
+    }
+
+    if (out_fmt <= AV_SAMPLE_FMT_NONE || out_fmt >= AV_SAMPLE_FMT_NB)
+    {
+        log_msg_warn("Invalid output format: %d!", out_fmt);
+        return false;
+    }
+
+    _in_sample_fmt = static_cast<AVSampleFormat>(in_fmt);
+    _out_sample_fmt = static_cast<AVSampleFormat>(out_fmt);
+
     if (out_layout == in_layout && out_fmt == in_fmt && out_sample_rate == in_sample_rate)
     {
         _need_rescale = false;
         return true;
     }
-
-    _in_sample_fmt = static_cast<AVSampleFormat>(in_fmt);
-    _out_sample_fmt = static_cast<AVSampleFormat>(out_fmt);
 
     _swr_ctx = swr_alloc_set_opts(nullptr, out_layout, _out_sample_fmt, out_sample_rate,
                                   in_layout, _in_sample_fmt, in_sample_rate, 0, nullptr);
