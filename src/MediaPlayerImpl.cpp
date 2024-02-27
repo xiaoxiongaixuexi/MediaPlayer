@@ -146,6 +146,8 @@ void CMediaPlayerImpl::close()
 
     _audio_index.clear();
     _video_index.clear();
+    _audio_queue.clear();
+    _video_queue.clear();
     _is_playing = false;
     _dst_pos = 0;
     _audio_clock = 0.0;

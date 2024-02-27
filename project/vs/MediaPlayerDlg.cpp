@@ -315,9 +315,11 @@ void CMediaPlayerDlg::OnBnClickedBtnCtrl()
 
 void CMediaPlayerDlg::OnBnClickedBtnStop()
 {
+    KillTimer(1);
     auto & media = CMediaPlayerImpl::getInstance();
     if (media.opened())
     {
+        media.setVolume(0);
         media.close();
     }
     m_blPlaying = false;
@@ -442,7 +444,9 @@ void CMediaPlayerDlg::OnNMCustomdrawSldVoice(NMHDR * pNMHDR, LRESULT * pResult)
         m_btnVoice.SetIcon(m_icoSilence);
     else
         m_btnVoice.SetIcon(m_icoVoice);
-    CMediaPlayerImpl::getInstance().setVolume(iVoice);
+    auto & media = CMediaPlayerImpl::getInstance();
+    if (media.opened())
+        media.setVolume(iVoice);
 
     *pResult = 0;
 }
