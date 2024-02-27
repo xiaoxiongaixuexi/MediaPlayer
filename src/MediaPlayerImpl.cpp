@@ -747,11 +747,6 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
             if (frm.best_effort_timestamp != AV_NOPTS_VALUE)
             {
                 const auto ts = static_cast<double>(frm.best_effort_timestamp) * av_q2d(_audio_stream->time_base);
-                if (_video_index.empty() && _audio_clock.load() > 0.0)
-                {
-                    const auto ts_diff = static_cast<int64_t>((ts - _audio_clock.load()) * 1000.0);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(ts_diff));
-                }
                 _audio_clock.store(ts);
             }
             if (_audio_rescaler->rescale(&frm, &out_buff, &out_buff_size))
