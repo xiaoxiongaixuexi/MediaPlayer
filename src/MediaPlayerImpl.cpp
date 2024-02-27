@@ -49,12 +49,12 @@ bool CMediaPlayerImpl::open(const char * url)
         {
         case AVMEDIA_TYPE_VIDEO:
         {
-            if (0 == cp->width * cp->height)
+            if (0 == cp->width || 0 == cp->height)
             {
                 log_msg_warn("SI(%d)'s width(%d) or height(%d) is invalid, ignore it ...", i, cp->width, cp->height);
                 break;
             }
-            if (si->avg_frame_rate.den * si->avg_frame_rate.num <= 0)
+            if (0 == si->avg_frame_rate.den || 0 == si->avg_frame_rate.num)
             {
                 log_msg_warn("SI(%d)'s frame rate is invalid, ignore it ...", i);
                 break;
