@@ -121,8 +121,8 @@
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>xcopy /y $(ProjectDir)..\..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\
-xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\</Command>
+      <Command>xcopy /y $(ProjectDir)..\..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\..\bin\$(Platform)\$(Configuration)\
+xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\..\bin\$(Platform)\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -152,8 +152,8 @@ xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>xcopy /y $(ProjectDir)..\..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\
-xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\</Command>
+      <Command>xcopy /y $(ProjectDir)..\..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\..\bin\$(Platform)\$(Configuration)\
+xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\..\bin\$(Platform)\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -187,8 +187,8 @@ xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>xcopy /y $(ProjectDir)..\..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\
-xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\</Command>
+      <Command>xcopy /y $(ProjectDir)..\..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\..\bin\$(Platform)\$(Configuration)\
+xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\..\bin\$(Platform)\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -222,8 +222,8 @@ xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>xcopy /y $(ProjectDir)..\..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\
-xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\bin\$(Platform)\$(Configuration)\</Command>
+      <Command>xcopy /y $(ProjectDir)..\..\..\libos\bin\$(Platform)\$(Configuration)\*.dll $(ProjectDir)..\..\bin\$(Platform)\$(Configuration)\
+xcopy /y $(ProjectDir)..\..\..\3rdparty\bin\$(PlatformTarget)\*.dll $(ProjectDir)..\..\bin\$(Platform)\$(Configuration)\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
