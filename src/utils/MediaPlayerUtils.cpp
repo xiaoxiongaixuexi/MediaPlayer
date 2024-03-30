@@ -1,5 +1,5 @@
 ﻿#include "MediaPlayerUtils.h"
-#include "os_log.h"
+#include "log.h"
 #include <windows.h>
 
 std::string media_utils_get_work_path()

@@ -1,5 +1,5 @@
 ﻿#include "VideoRenderSDL.h"
-#include "os_log.h"
+#include "log.h"
 
 bool CVideoRendererSDL::create(const void * wnd, int width, int height)
 {

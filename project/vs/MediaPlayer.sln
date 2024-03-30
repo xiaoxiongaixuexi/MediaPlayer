@@ -5,10 +5,10 @@ VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MediaPlayer", "MediaPlayer.vcxproj", "{8EE0A599-34D5-4402-9054-C57363F6B897}"
 	ProjectSection(ProjectDependencies) = postProject
-		{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB} = {0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}
+		{7036EF71-FA14-438F-B7B7-4A73E3647833} = {7036EF71-FA14-438F-B7B7-4A73E3647833}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libos", "..\..\..\libos\project\win\libos.vcxproj", "{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "log", "..\..\..\log\project\win\log.vcxproj", "{7036EF71-FA14-438F-B7B7-4A73E3647833}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,14 +26,14 @@ Global
 		{8EE0A599-34D5-4402-9054-C57363F6B897}.Release|x64.Build.0 = Release|x64
 		{8EE0A599-34D5-4402-9054-C57363F6B897}.Release|x86.ActiveCfg = Release|Win32
 		{8EE0A599-34D5-4402-9054-C57363F6B897}.Release|x86.Build.0 = Release|Win32
-		{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}.Debug|x64.ActiveCfg = Debug|x64
-		{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}.Debug|x64.Build.0 = Debug|x64
-		{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}.Debug|x86.ActiveCfg = Debug|Win32
-		{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}.Debug|x86.Build.0 = Debug|Win32
-		{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}.Release|x64.ActiveCfg = Release|x64
-		{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}.Release|x64.Build.0 = Release|x64
-		{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}.Release|x86.ActiveCfg = Release|Win32
-		{0558A1E1-0C53-47D0-AF61-FD2EDC86CAAB}.Release|x86.Build.0 = Release|Win32
+		{7036EF71-FA14-438F-B7B7-4A73E3647833}.Debug|x64.ActiveCfg = Debug|x64
+		{7036EF71-FA14-438F-B7B7-4A73E3647833}.Debug|x64.Build.0 = Debug|x64
+		{7036EF71-FA14-438F-B7B7-4A73E3647833}.Debug|x86.ActiveCfg = Debug|Win32
+		{7036EF71-FA14-438F-B7B7-4A73E3647833}.Debug|x86.Build.0 = Debug|Win32
+		{7036EF71-FA14-438F-B7B7-4A73E3647833}.Release|x64.ActiveCfg = Release|x64
+		{7036EF71-FA14-438F-B7B7-4A73E3647833}.Release|x64.Build.0 = Release|x64
+		{7036EF71-FA14-438F-B7B7-4A73E3647833}.Release|x86.ActiveCfg = Release|Win32
+		{7036EF71-FA14-438F-B7B7-4A73E3647833}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

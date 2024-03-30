@@ -1,5 +1,5 @@
 ﻿#include "MediaPlayerDemuxFfmpeg.h"
-#include "os_log.h"
+#include "log.h"
 
 #include <algorithm>
 

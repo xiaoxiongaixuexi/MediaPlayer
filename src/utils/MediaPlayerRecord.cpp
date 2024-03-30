@@ -1,5 +1,5 @@
 ﻿#include "MediaPlayerRecord.h"
-#include "os_log.h"
+#include "log.h"
 
 #include <io.h>
 #include <windows.h>

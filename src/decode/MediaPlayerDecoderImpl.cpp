@@ -1,5 +1,5 @@
 ﻿#include "MediaPlayerDecoderImpl.h"
-#include "os_log.h"
+#include "log.h"
 
 bool CAVDecoderImpl::create(const AVCodecParameters * codecpar)
 {

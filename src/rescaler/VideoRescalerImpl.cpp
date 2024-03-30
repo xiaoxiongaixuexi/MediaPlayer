@@ -1,5 +1,5 @@
 ﻿#include "VideoRescalerImpl.h"
-#include "os_log.h"
+#include "log.h"
 
 bool CVideoRescalerImpl::create(const AVPixelFormat in_fmt, const int in_width, const int in_height,
                                 const AVPixelFormat out_fmt, const int out_width, const int out_height)

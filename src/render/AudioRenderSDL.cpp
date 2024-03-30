@@ -1,7 +1,7 @@
 ﻿#include "AudioRenderSDL.h"
 #include <malloc.h>
 #include "SDL/SDL.h"
-#include "os_log.h"
+#include "log.h"
 
 static void read_data_cb(void * udata, uint8_t * data, int len)
 {

@@ -7,8 +7,9 @@
 #include "MediaPlayer.h"
 #include "MediaPlayerDlg.h"
 #include "MediaPlayerLinkDlg.h"
-#include "os_log.h"
+#include "log.h"
 #include "utils/MediaPlayerUtils.h"
+#include "utils/MediaPlayerRecord.h"
 #include "afxdialogex.h"
 #include <io.h>
 
