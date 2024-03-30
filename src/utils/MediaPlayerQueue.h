@@ -1,16 +1,16 @@
-#pragma once
+﻿#pragma once
 
-#include <stdbool.h>
-#include <stdio.h>
+#include <cstdio>
+#include <cstdbool>
 #include <queue>
 #include <mutex>
 
 template <typename T>
-class CMediaMessageQueue
+class CMediaPlayerQueue
 {
 public:
-    explicit CMediaMessageQueue() = default;
-    virtual ~CMediaMessageQueue() = default;
+    explicit CMediaPlayerQueue() = default;
+    virtual ~CMediaPlayerQueue() = default;
 
 public:
     void push(const T & item)
@@ -42,6 +42,12 @@ public:
         _queue.pop_front();
 
         return true;
+    }
+
+    void clear()
+    {
+        std::unique_lock<std::mutex> lock(_mutex);
+        _queue.clear();
     }
 
     bool empty()

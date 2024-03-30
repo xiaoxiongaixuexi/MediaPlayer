@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -8,208 +8,202 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include "MediaMessageQueue.h"
+#include "utils/MediaPlayerQueue.h"
 
-#include "SDL.h"
-#ifdef __cplusplus
 extern "C" {
-#endif
-#include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
 #include "libavutil/avutil.h"
-#include "libswresample/swresample.h"
-#include "libswscale/swscale.h"
-#ifdef __cplusplus
+#include "libavformat/avformat.h"
 }
-#endif
 
-// ²¥·Å±¶ËÙ
+// æ’­æ”¾å€é€Ÿ
 typedef enum _MEDIA_PLAYER_SPEED
 {
-	MEDIA_PLAYER_SPEED_NONE = 0,  // ²»Ö§³Ö±¶ËÙ
-	MEDIA_PLAYER_SPEED_QUARTER,   // 0.25±¶ËÙ
-	MEDIA_PLAYER_SPEED_HALF,      // 0.5±¶ËÙ
-	MEDIA_PLAYER_SPEED_NORMAL,    // 1±¶ËÙ
-	MEDIA_PLAYER_SPEED_DOUBLE,    // 2±¶ËÙ
-	MEDIA_PLAYER_SPEED_QUADRUPLE, // 4±¶ËÙ
-	MEDIA_PLAYER_SPEED_MAX        // ·â¶¥
+    MEDIA_PLAYER_SPEED_NONE = 0,  // ä¸æ”¯æŒå€é€Ÿ
+    MEDIA_PLAYER_SPEED_QUARTER,   // 0.25å€é€Ÿ
+    MEDIA_PLAYER_SPEED_HALF,      // 0.5å€é€Ÿ
+    MEDIA_PLAYER_SPEED_NORMAL,    // 1å€é€Ÿ
+    MEDIA_PLAYER_SPEED_DOUBLE,    // 2å€é€Ÿ
+    MEDIA_PLAYER_SPEED_QUADRUPLE, // 4å€é€Ÿ
+    MEDIA_PLAYER_SPEED_MAX        // å°é¡¶
 } MEDIA_PLAYER_SPEED;
 
-typedef struct _audio_info_t
-{
-    int volume;
-    int len;
-	int index;        // ²¥·ÅÎ»ÖÃ
-    uint8_t * chunk;
-    uint8_t * pos;
-} audio_info_t;
-
-class CMediaPlayerRescaler;
+class CMediaPlayerDemux;
+class CAVDecoderImpl;
+class CVideoRescalerImpl;
+class CAudioRescalerImpl;
+class CVideoRendererSDL;
+class CAudioRendererSDL;
 
 class CMediaPlayerImpl
 {
 public:
-	CMediaPlayerImpl() = default;
-	~CMediaPlayerImpl() = default;
+    static CMediaPlayerImpl & getInstance()
+    {
+        static CMediaPlayerImpl instance;
+        return instance;
+    }
 
-public:
-	// ´ò¿ªÎÄ¼ş
-	bool open(const char* url);
+    // æ˜¯å¦æœ‰å¼€ç€çš„æ–‡ä»¶
+    bool opened() const;
 
-	// ¹Ø±ÕÎÄ¼ş
-	void close();
+    // æ‰“å¼€æ–‡ä»¶
+    bool open(const char * url);
 
-	// »ñÈ¡ÎÄ¼şÊ±³¤
-	int64_t getVideoDuration();
+    // å…³é—­æ–‡ä»¶
+    void close();
 
-	// »ñÈ¡µ±Ç°²¥·ÅÎ»ÖÃ
-	int64_t getVideoPos();
+    // è·å–æ–‡ä»¶æ—¶é•¿
+    int64_t getDuration();
 
-	// ¿ªÊ¼²¥·Å
-	bool start(const void* wnd, int width, int height);
+    // è·å–å½“å‰æ’­æ”¾ä½ç½®
+    int64_t getPosition();
 
-	// ÔİÍ£
-	bool pause();
+    // è®¾ç½®æ’­æ”¾ä½ç½®
+    bool setPosition(int pos);
 
-	// Í£Ö¹
-	bool stop();
+    // å¼€å§‹æ’­æ”¾
+    bool start(const void * wnd, int width, int height);
 
-	// ¿ì½ø
-	bool forward();
+    // æš‚åœ
+    bool pause();
 
-	// ¿ìÍË
-	bool backward();
+    // å¿«è¿›
+    bool forward();
+
+    // å¿«é€€
+    bool backward();
+
+    // è®¾ç½®éŸ³é‡
+    bool setVolume(int volume);
 
 protected:
-	// ´´½¨½âÂëÆ÷
-	AVCodecContext * createDecoder(int stream_index);
+    // åˆå§‹åŒ–è§†é¢‘æµ
+    bool initVideoStream();
 
-	// Ïú»Ù½âÂëÆ÷
-	void destoryDecoder(AVCodecContext ** decoder);
+    // é”€æ¯è§†é¢‘æµ
+    void uninitVideoStream();
 
-	// ÊÓÆµÖ¡½âÂë
-	bool decodeVideoPacket(const AVPacket * pkt, AVFrame * frm, bool * got);
+    // åˆå§‹åŒ–éŸ³é¢‘æµ
+    bool initAudioStream();
 
-	// ÒôÆµÖ¡½âÂë
-	bool decodeAudioPacket(const AVPacket * pkt, AVFrame * frm, bool * got);
+    // é”€æ¯éŸ³é¢‘æµ
+    void uninitAudioStream();
 
-	// ´´½¨ÊÓÆµ²¥·ÅÆ÷
-	bool createVideoPlayer(const void * wnd, int width, int height);
+    // åˆ›å»ºè§†é¢‘æ’­æ”¾å™¨
+    bool createVideoPlayer(const void * wnd, int width, int height);
 
-	// Ïú»ÙÊÓÆµ²¥·ÅÆ÷
-	void destoryVideoPlayer();
+    // é”€æ¯è§†é¢‘æ’­æ”¾å™¨
+    void destoryVideoPlayer();
 
-	// ´´½¨ÒôÆµ²¥·ÅÆ÷
-	bool createAudioPlayer();
+    // åˆ›å»ºéŸ³é¢‘æ’­æ”¾å™¨
+    bool createAudioPlayer();
 
-	// Ïú»ÙÒôÆµ²¥·ÅÆ÷
-	void destoryAudioPlayer();
+    // é”€æ¯éŸ³é¢‘æ’­æ”¾å™¨
+    void destoryAudioPlayer();
 
-	// ´´½¨ÒôÆµ×ª»»Æ÷
-	bool createAudioRescaler();
+    // æ¥æ”¶æ•°æ®åŒ…çº¿ç¨‹
+    void recvPacketsThr();
 
-	//Ïú»ÙÒôÆµ×ª»»Æ÷
-	void destoryAudioRescaler();
+    // å¤„ç†è§†é¢‘æ•°æ®çº¿ç¨‹
+    void dealVideoPacketsThr();
 
-	// ½ÓÊÕÊı¾İ°üÏß³Ì
-	void recvPacketsThr();
-
-	// ´¦ÀíÊÓÆµÊı¾İÏß³Ì
-	void dealVideoPacketsThr();
-
-	// ´¦ÀíÒôÆµÊı¾İÏß³Ì
-	void dealAudioPacketsThr();
-
-	// »ñÈ¡ÒôÆµÊ±ÖÓ
-	double getAudioClock();
+    // å¤„ç†éŸ³é¢‘æ•°æ®çº¿ç¨‹
+    void dealAudioPacketsThr();
 
 private:
-	// ÊÇ·ñ³õÊ¼»¯
-	std::atomic_bool _is_init = { false };
+    CMediaPlayerImpl() = default;
+    ~CMediaPlayerImpl() = default;
+    // åˆ é™¤ä¸‰å¤§é»˜è®¤æˆå‘˜å‡½æ•°ï¼Œèµ‹å€¼ã€å¤åˆ¶å’Œåœ°å€è¿ç®—
+    CMediaPlayerImpl(const CMediaPlayerImpl &) = delete;
+    CMediaPlayerImpl & operator=(const CMediaPlayerImpl &) = delete;
+    CMediaPlayerImpl * operator&() = delete;
 
-	// ÊÇ·ñÎÄ¼ş½áÊø
-	std::atomic_bool _is_over = { false };
-	// ÊÇ·ñ²¥·ÅÖĞ
-	std::atomic_bool _is_playing = { false };
-	// ÊÇ·ñÔİÍ£ÖĞ
-	std::atomic_bool _is_pause = { false };
+    // æ˜¯å¦åˆå§‹åŒ–
+    std::atomic_bool _is_init = { false };
 
-	// Êı¾İ°üÏß³ÌËø
-	std::mutex _packets_mtx;
-	// ¶ÁÈ¡Êı¾İ°üÏß³Ì
-	std::thread _packets_thr;
-	// ¶ÁÈ¡Êı¾İ°ü±äÁ¿
-	std::condition_variable _packets_cond;
-	
-	// ÊÓÆµÊı¾İÏß³ÌËø
-	std::mutex _video_mtx;
-	// ´¦ÀíÊÓÆµÊı¾İÏß³Ì
-	std::thread _video_thr;
-	// ÊÓÆµÏß³Ì±äÁ¿
-	std::condition_variable _video_cond;
+    // æ˜¯å¦æ’­æ”¾ä¸­
+    std::atomic_bool _is_playing = { false };
+    // æ˜¯å¦æš‚åœä¸­
+    std::atomic_bool _is_pause = { false };
+    // æ˜¯å¦è·³è½¬æ’­æ”¾ä½ç½®
+    std::atomic_bool _is_skip = { false };
+    // ç›®æ ‡æ’­æ”¾ä½ç½®
+    std::atomic_int32_t _dst_pos = { 0 };
 
-	// ÒôÆµÊı¾İÏß³ÌËø
-	std::mutex _audio_mtx;
-	// ´¦ÀíÒôÆµÊı¾İÏß³Ì
-	std::thread _audio_thr;
-	// ÒôÆµ½âÂëÏß³Ì±äÁ¿
-	std::condition_variable _audio_cond;
+    // æ•°æ®åŒ…çº¿ç¨‹é”
+    std::mutex _packets_mtx;
+    // è¯»å–æ•°æ®åŒ…çº¿ç¨‹
+    std::thread _packets_thr;
+    // è¯»å–æ•°æ®åŒ…å˜é‡
+    std::condition_variable _packets_cond;
 
-	// ÊÓÆµÁ÷Ë÷Òı
-	std::atomic_int _video_index = { -1 };
-	// ÊÓÆµ½âÂëÆ÷
-	AVCodecContext * _video_decoder = nullptr;
+    // è§†é¢‘æ•°æ®çº¿ç¨‹é”
+    std::mutex _video_mtx;
+    // å¤„ç†è§†é¢‘æ•°æ®çº¿ç¨‹
+    std::thread _video_thr;
+    // è§†é¢‘çº¿ç¨‹å˜é‡
+    std::condition_variable _video_cond;
 
-	// µ±Ç°Ê¹ÓÃÒôÆµÁ÷Ë÷Òı
-	std::atomic_int _audio_cur_index = { -1 };
-	// ÊÓÆµÁ÷Ë÷ÒıÊı×é
+    // éŸ³é¢‘æ•°æ®çº¿ç¨‹é”
+    std::mutex _audio_mtx;
+    // å¤„ç†éŸ³é¢‘æ•°æ®çº¿ç¨‹
+    std::thread _audio_thr;
+    // éŸ³é¢‘è§£ç çº¿ç¨‹å˜é‡
+    std::condition_variable _audio_cond;
+
+    // è§†é¢‘æµç´¢å¼•æ•°ç»„
+    std::vector<int> _video_index;
+    // å½“å‰ä½¿ç”¨è§†é¢‘æµç´¢å¼•
+    std::atomic_int _video_cur_index = { -1 };
+    // è§†é¢‘æµ
+    AVStream * _video_stream = nullptr;
+    // è§†é¢‘è§£ç å™¨
+    CAVDecoderImpl * _video_decoder = nullptr;
+    // è§†é¢‘è½¬æ¢å™¨
+    CVideoRescalerImpl * _video_rescaler = nullptr;
+    // è§†é¢‘æ¸²æŸ“å™¨
+    CVideoRendererSDL * _video_render = nullptr;
+    //
+    std::atomic_bool _video_done = { false };
+
+    // éŸ³é¢‘æµç´¢å¼•æ•°ç»„
     std::vector<int> _audio_index;
-	// ÒôÆµ½âÂëÆ÷
-	AVCodecContext * _audio_decoder = nullptr;
-	// ÒôÆµÊ±ÖÓ
-	double _audio_clock = 0.0;
+    // å½“å‰ä½¿ç”¨éŸ³é¢‘æµç´¢å¼•
+    std::atomic_int _audio_cur_index = { -1 };
+    // éŸ³é¢‘æµ
+    AVStream * _audio_stream = nullptr;
+    // éŸ³é¢‘è§£ç å™¨
+    CAVDecoderImpl * _audio_decoder = nullptr;
+    // éŸ³é¢‘è½¬æ¢å™¨
+    CAudioRescalerImpl * _audio_rescaler = nullptr;
+    // éŸ³é¢‘æ¸²æŸ“å™¨
+    CAudioRendererSDL * _audio_render = nullptr;
+    // éŸ³é¢‘æ—¶é’Ÿ
+    std::atomic<double> _audio_clock = { 0.0 };
+    // 
+    std::atomic_bool _audio_done = { false };
 
-	// ÊÓÆµÏñËØ¸ñÊ½
-	AVPixelFormat _pix_fmt = AVPixelFormat::AV_PIX_FMT_NONE;
-	// ÊäÈëÁ÷ÉÏÏÂÎÄ
-	AVFormatContext * _fmt_ctx = nullptr;
-	// ÊÓÆµÁ÷
-	AVStream * _video_stream = nullptr;
-	// ÒôÆµÁ÷
-	AVStream * _audio_stream = nullptr;
+    // è§†é¢‘åƒç´ æ ¼å¼
+    AVPixelFormat _pix_fmt = AVPixelFormat::AV_PIX_FMT_NONE;
+    // è¾“å…¥æµä¸Šä¸‹æ–‡
+    CMediaPlayerDemux * _ctx = nullptr;
 
-	// ÆÁÄ»¿í¶È
-	int _wnd_width = 0;
-	// ÆÁÄ»¸ß¶È
-	int _wnd_height = 0;
-	// ÊÓÆµÖ¡¿í¶È
-	int _frm_width = 0;
-	// ÊÓÆµÖ¡¸ß¶È
-	int _frm_height = 0;
+    // å±å¹•å®½åº¦
+    int _wnd_width = 0;
+    // å±å¹•é«˜åº¦
+    int _wnd_height = 0;
+    // è§†é¢‘å¸§å®½åº¦
+    int _frm_width = 0;
+    // è§†é¢‘å¸§é«˜åº¦
+    int _frm_height = 0;
 
-	audio_info_t * _audio_info = nullptr;
-	// ÊÓÆµ×ª»»Æ÷
-	CMediaPlayerRescaler * _rescaler = nullptr;
-	// ÒôÆµ×ª»»Æ÷
-	SwrContext * _audio_rescaler = nullptr;
+    // è§†é¢‘åŒ…é˜Ÿåˆ—
+    CMediaPlayerQueue<AVPacket> _video_queue;
+    // éŸ³é¢‘åŒ…é˜Ÿåˆ—
+    CMediaPlayerQueue<AVPacket> _audio_queue;
 
-	// Î»ÖÃ
-	SDL_Rect _sdl_rect = { 0 };
-	// ²¥·ÅÆ÷¾ä±ú
-	SDL_Window * _player_wnd = nullptr;
-	// äÖÈ¾Æ÷
-	SDL_Renderer * _sdl_render = nullptr;
-	// É«ÔóÎÆÀí
-	SDL_Texture * _sdl_texture = nullptr;
-
-	// ÊÓÆµ°ü¶ÓÁĞ
-	CMediaMessageQueue<AVPacket> _video_queue;
-	// ÒôÆµ°ü¶ÓÁĞ
-	CMediaMessageQueue<AVPacket> _audio_queue;
-
-	// ÒôÆµÒôÁ¿
-	std::atomic_int _volume = { 64 };
-	// ²¥·Å±¶ËÙ Ä¬ÈÏÕı³£±¶ËÙ
-	MEDIA_PLAYER_SPEED _speed = MEDIA_PLAYER_SPEED_NORMAL;
+    // æ–‡ä»¶æ—¶é•¿
+    std::atomic_int64_t _duration_sec = { -1 };
+    // æ’­æ”¾å€é€Ÿ é»˜è®¤æ­£å¸¸å€é€Ÿ
+    MEDIA_PLAYER_SPEED _speed = MEDIA_PLAYER_SPEED_NORMAL;
 };
-

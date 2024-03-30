@@ -1,0 +1,186 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="源文件\src">
+      <UniqueIdentifier>{428eff15-f409-4ddf-88b0-add175428399}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\src\rescaler">
+      <UniqueIdentifier>{887ca29b-7ad5-4743-8d53-d4296b637b90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\src\utils">
+      <UniqueIdentifier>{46234082-4950-4549-9420-ec66284d352d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\src\demux">
+      <UniqueIdentifier>{0c1d284e-405e-4637-8e50-db837c144c57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\src\mux">
+      <UniqueIdentifier>{ace2593b-e1d5-42f2-8561-df6811ab7324}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\src\decode">
+      <UniqueIdentifier>{003a1519-00ab-44e8-a842-a660c0b2b073}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\src\render">
+      <UniqueIdentifier>{f025b4d6-86ee-421a-a753-2940590a3bda}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MediaPlayer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MediaPlayerDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="framework.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\MediaPlayerImpl.h">
+      <Filter>源文件\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rescaler\AudioRescalerImpl.h">
+      <Filter>源文件\src\rescaler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rescaler\VideoRescalerImpl.h">
+      <Filter>源文件\src\rescaler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils\MediaPlayerUtils.h">
+      <Filter>源文件\src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils\MediaPlayerRecord.h">
+      <Filter>源文件\src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\demux\MediaPlayerDemuxFfmpeg.h">
+      <Filter>源文件\src\demux</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils\MediaPlayerQueue.h">
+      <Filter>源文件\src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render\AudioRenderSDL.h">
+      <Filter>源文件\src\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render\VideoRenderSDL.h">
+      <Filter>源文件\src\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\decode\MediaPlayerDecoderImpl.h">
+      <Filter>源文件\src\decode</Filter>
+    </ClInclude>
+    <ClInclude Include="MediaPlayerLinkDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mux\MediaPlayerMux.h">
+      <Filter>源文件\src\mux</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MediaPlayer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MediaPlayerDlg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\MediaPlayerImpl.cpp">
+      <Filter>源文件\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rescaler\AudioRescalerImpl.cpp">
+      <Filter>源文件\src\rescaler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rescaler\VideoRescalerImpl.cpp">
+      <Filter>源文件\src\rescaler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\utils\MediaPlayerUtils.cpp">
+      <Filter>源文件\src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\utils\MediaPlayerRecord.cpp">
+      <Filter>源文件\src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\demux\MediaPlayerDemuxFfmpeg.cpp">
+      <Filter>源文件\src\demux</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render\AudioRenderSDL.cpp">
+      <Filter>源文件\src\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render\VideoRenderSDL.cpp">
+      <Filter>源文件\src\render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\decode\MediaPlayerDecoderImpl.cpp">
+      <Filter>源文件\src\decode</Filter>
+    </ClCompile>
+    <ClCompile Include="MediaPlayerLinkDlg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mux\MediaPlayerMux.cpp">
+      <Filter>源文件\src\mux</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MediaPlayer.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\MediaPlayer.rc2">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\MediaPlayer.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\backward.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\forward.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\pause.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\play.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\stop.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\folder.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\last.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\next.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\silence.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\voice.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="res\link.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+  </ItemGroup>
+</Project>

@@ -1,30 +1,23 @@
-#include "MediaPlayerImpl.h"
-#include "MediaPlayerRescaler.h"
-#include "libos.h"
+ï»¿#include "MediaPlayerImpl.h"
+#include "log.h"
 
-static void readAudioDataCb(void * udata, uint8_t * data, int len)
+#include "demux/MediaPlayerDemuxFfmpeg.h"
+#include "decode/MediaPlayerDecoderImpl.h"
+#include "rescaler/VideoRescalerImpl.h"
+#include "rescaler/AudioRescalerImpl.h"
+#include "render/VideoRenderSDL.h"
+#include "render/AudioRenderSDL.h"
+
+bool CMediaPlayerImpl::opened() const
 {
-    SDL_memset(data, 0, len);
-
-    auto * audio_info = reinterpret_cast<audio_info_t *>(udata);
-    if (nullptr == audio_info || 0 == audio_info->len)
-    {
-        return;
-    }
-
-    len = (len > audio_info->len) ? audio_info->len : len;
-
-    SDL_MixAudio(data, audio_info->pos, len, audio_info->volume);
-
-    audio_info->pos += len;
-    audio_info->len -= len;
+    return _is_init;
 }
 
-bool CMediaPlayerImpl::open(const char* url)
+bool CMediaPlayerImpl::open(const char * url)
 {
-    if (nullptr == url)
+    if (nullptr == url || '\0' == url[0])
     {
-        log_msg_warn("Input param is nullptr!");
+        log_msg_warn("Input param is nullptr or empty!");
         return false;
     }
 
@@ -34,66 +27,79 @@ bool CMediaPlayerImpl::open(const char* url)
         return false;
     }
 
-    _fmt_ctx = avformat_alloc_context();
-    if (nullptr == _fmt_ctx)
+    _ctx = new(std::nothrow) CMediaPlayerDemux();
+    if (nullptr == _ctx)
     {
-        log_msg_warn("avformat_alloc_context failed!");
+        log_msg_error("Create CMediaPlayerDemux instance failed");
         return false;
     }
 
-    int ret = -1;
-    do 
+    if (!_ctx->open(url, ""))
     {
-        ret = avformat_open_input(&_fmt_ctx, url, nullptr, nullptr);
-        if (0 != ret)
-        {
-            char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-            av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-            log_msg_warn("avformat_open_input %s failed, err:%s", url, buff);
-            break;
-        }
-
-        ret = avformat_find_stream_info(_fmt_ctx, nullptr);
-        if (ret < 0)
-        {
-            char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-            av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-            log_msg_warn("avformat_find_stream_info %s failed, err:%s", url, buff);
-            break;
-        }
-    } while (false);
-
-    if (0 != ret)
-    {
-        avformat_close_input(&_fmt_ctx);
-        avformat_free_context(_fmt_ctx);
-        _fmt_ctx = nullptr;
+        log_msg_warn("Open url %s failed", url);
         return false;
     }
 
-    for (uint32_t i = 0; i < _fmt_ctx->nb_streams; i++)
+    const uint32_t streams_cnt = _ctx->getStreamsCount();
+    for (uint32_t i = 0; i < streams_cnt; ++i)
     {
-        auto codecpar = _fmt_ctx->streams[i]->codecpar;
-        if (codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-            _video_index = i;
-        else
-            _audio_index.emplace_back(i);
+        const auto * si = _ctx->getStreamInfo(i);
+        const auto * cp = si->codecpar;
+        switch (cp->codec_type)
+        {
+        case AVMEDIA_TYPE_VIDEO:
+        {
+            if (0 == cp->width || 0 == cp->height)
+            {
+                log_msg_warn("SI(%d)'s width(%d) or height(%d) is invalid, ignore it ...", i, cp->width, cp->height);
+                break;
+            }
+            if (0 == si->avg_frame_rate.den || 0 == si->avg_frame_rate.num)
+            {
+                log_msg_warn("SI(%d)'s frame rate is invalid, ignore it ...", i);
+                break;
+            }
+
+            _video_index.emplace_back(i);
+            break;
+        }
+        case AVMEDIA_TYPE_AUDIO:
+        {
+            if (cp->sample_rate > 0 && cp->channels > 0)
+                _audio_index.emplace_back(i);
+            break;
+        }
+        default:
+            break;
+        }
     }
 
-    _video_stream = _fmt_ctx->streams[_video_index];
+    if (!_video_index.empty())
+    {
+        _video_cur_index = _video_index[0];
+        _video_stream = _ctx->getStreamInfo(_video_cur_index.load());
+    }
+
     if (!_audio_index.empty())
     {
-        _audio_cur_index = _audio_index.front();
-        _audio_stream = _fmt_ctx->streams[_audio_cur_index.load()];
+        _audio_cur_index = _audio_index[0];
+        _audio_stream = _ctx->getStreamInfo(_audio_cur_index.load());
     }
 
+    _duration_sec = _ctx->getDuration();
     _is_init = true;
 
     SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO);
 
     _packets_thr = std::thread{ &CMediaPlayerImpl::recvPacketsThr,this };
-    _video_thr = std::thread{ &CMediaPlayerImpl::dealVideoPacketsThr,this };
-    _audio_thr = std::thread{ &CMediaPlayerImpl::dealAudioPacketsThr,this };
+    if (!_video_index.empty())
+    {
+        _video_thr = std::thread{ &CMediaPlayerImpl::dealVideoPacketsThr,this };
+    }
+    if (!_audio_index.empty())
+    {
+        _audio_thr = std::thread{ &CMediaPlayerImpl::dealAudioPacketsThr,this };
+    }
 
     return true;
 }
@@ -124,41 +130,67 @@ void CMediaPlayerImpl::close()
         _audio_thr.join();
     }
 
-    if (_fmt_ctx)
+    uninitVideoStream();
+    uninitAudioStream();
+    destoryVideoPlayer();
+    destoryAudioPlayer();
+
+    if (nullptr != _ctx)
     {
-        avformat_close_input(&_fmt_ctx);
-        avformat_free_context(_fmt_ctx);
-        _fmt_ctx = nullptr;
+        _ctx->close();
+        delete _ctx;
+        _ctx = nullptr;
     }
 
     SDL_Quit();
 
     _audio_index.clear();
+    _video_index.clear();
+    _audio_queue.clear();
+    _video_queue.clear();
+    _is_playing = false;
+    _dst_pos = 0;
+    _audio_clock = 0.0;
 }
 
-int64_t CMediaPlayerImpl::getVideoDuration()
+int64_t CMediaPlayerImpl::getDuration()
 {
-    if (nullptr == _fmt_ctx)
+    if (nullptr == _ctx)
     {
         log_msg_warn("file is not open!");
         return -1;
     }
 
-    if (nullptr == _video_stream)
-    {
-        log_msg_warn("get video stream info failed!");
+    return _duration_sec;
+}
+
+int64_t CMediaPlayerImpl::getPosition()
+{
+    if (_audio_clock.load() < 0.0)
         return -1;
+
+    int64_t position = static_cast<int64_t>(ceil(_audio_clock));
+    if (position > _duration_sec)
+        position = _duration_sec;
+    return position;
+}
+
+bool CMediaPlayerImpl::setPosition(const int pos)
+{
+    if (nullptr == _ctx)
+    {
+        log_msg_warn("No opened faile!");
+        return false;
     }
 
-    return _video_stream->duration;
+    _dst_pos.store(pos);
+    _is_skip = true;
+    _audio_render->mute(true);
+
+    return true;
 }
 
-int64_t CMediaPlayerImpl::getVideoPos()
-{
-    return 0;
-}
-
-bool CMediaPlayerImpl::start(const void * wnd, int width, int height)
+bool CMediaPlayerImpl::start(const void * wnd, const int width, const int height)
 {
     if (nullptr == wnd)
     {
@@ -176,48 +208,30 @@ bool CMediaPlayerImpl::start(const void * wnd, int width, int height)
     {
         _is_pause = false;
         _is_playing = true;
+        SDL_PauseAudio(0);
         _packets_cond.notify_one();
         return true;
     }
 
-    // ´´½¨ÊÓÆµ½âÂëÆ÷
-    _video_decoder = createDecoder(_video_index);
-    if (nullptr == _video_decoder)
+    _wnd_width = width;
+    _wnd_height = height;
+
+    if (!initVideoStream())
     {
-        log_msg_warn("create video deocder failed!");
+        log_msg_warn("initVideoStream failed.");
         return false;
     }
-    else
+
+    if (!initAudioStream())
     {
-        _pix_fmt = _video_decoder->pix_fmt;
-        _frm_width = _video_decoder->width;
-        _frm_height = _video_decoder->height;
+        log_msg_warn("initAudioStream failed.");
+        goto ERR;
     }
 
-    // ´´½¨ÊÓÆµ²¥·ÅÆ÷
+    // åˆ›å»ºè§†é¢‘æ’­æ”¾å™¨
     if (!createVideoPlayer(wnd, width, height))
     {
         log_msg_warn("createVideoPlayer");
-        goto ERR;
-    }
-
-    // ´´½¨ÊÓÆµ×ª»»Æ÷
-    _rescaler = new (std::nothrow)CMediaPlayerRescaler();
-    if (nullptr == _rescaler)
-    {
-        log_msg_error("new (std::nothrow)CMediaPlayerRescaler failed!");
-        goto ERR;
-    }
-    if (!_rescaler->create(_pix_fmt, _frm_width, _frm_height, AV_PIX_FMT_YUV420P, width, height))
-    {
-        log_msg_warn("create rescaler failed!");
-        goto ERR;
-    }
-
-    _audio_decoder = createDecoder(_audio_cur_index.load());
-    if (nullptr == _audio_decoder)
-    {
-        log_msg_warn("create audio deocder failed!");
         goto ERR;
     }
 
@@ -227,30 +241,16 @@ bool CMediaPlayerImpl::start(const void * wnd, int width, int height)
         goto ERR;
     }
 
-    if (!createAudioRescaler())
-    {
-        log_msg_warn("");
-        goto ERR;
-    }
-
     _is_playing = true;
-    // »½ÐÑ¶Á°üÏß³Ì
+    // å”¤é†’è¯»åŒ…çº¿ç¨‹
     _packets_cond.notify_one();
 
     return true;
 
 ERR:
-    destoryDecoder(&_video_decoder);
+    uninitVideoStream();
+    uninitAudioStream();
     destoryVideoPlayer();
-
-    if (_rescaler)
-    {
-        _rescaler->destory();
-        delete _rescaler;
-        _rescaler = nullptr;
-    }
-
-    destoryDecoder(&_audio_decoder);
     destoryAudioPlayer();
 
     return false;
@@ -263,286 +263,252 @@ bool CMediaPlayerImpl::pause()
     return true;
 }
 
-bool CMediaPlayerImpl::stop()
-{
-    return true;
-}
-
 bool CMediaPlayerImpl::forward()
 {
+    if (_speed < MEDIA_PLAYER_SPEED_QUADRUPLE)
+    {
+        int speed = static_cast<int>(_speed) + 1;
+        _speed = static_cast<MEDIA_PLAYER_SPEED>(speed);
+    }
+
     return true;
 }
 
 bool CMediaPlayerImpl::backward()
 {
-    return true;
-}
-
-AVCodecContext * CMediaPlayerImpl::createDecoder(int stream_index)
-{
-    if (nullptr == _fmt_ctx)
+    if (_speed > MEDIA_PLAYER_SPEED_QUARTER)
     {
-        log_msg_warn("nullptr == _fmt_ctx");
-        return false;
+        int speed = static_cast<int>(_speed) - 1;
+        _speed = static_cast<MEDIA_PLAYER_SPEED>(speed);
     }
-
-    if (stream_index < 0 || stream_index >= static_cast<int>(_fmt_ctx->nb_streams))
-    {
-        log_msg_warn("invalid stream index:%d", stream_index);
-        return false;
-    }
-
-    auto * codecpar = _fmt_ctx->streams[stream_index]->codecpar;
-    auto * codec = avcodec_find_decoder(codecpar->codec_id);
-    if (nullptr == codec)
-    {
-        log_msg_warn("avcodec_find_decoder failed!");
-        return false;
-    }
-
-    AVCodecContext * decoder = avcodec_alloc_context3(codec);
-    if (nullptr == decoder)
-    {
-        log_msg_warn("avcodec_alloc_context3 failed!");
-        return false;
-    }
-
-    int ret = 0;
-    do 
-    {
-        ret = avcodec_parameters_to_context(decoder, codecpar);
-        if (ret < 0)
-        {
-            char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-            av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-            log_msg_warn("avcodec_parameters_to_context failed, err:%s", buff);
-            break;
-        }
-
-        ret = avcodec_open2(decoder, codec, nullptr);
-        if (0 != ret)
-        {
-            char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-            av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-            log_msg_warn("avcodec_open2 failed, err:%s", buff);
-            break;
-        }
-    } while (false);
-    if (0 != ret)
-    {
-        avcodec_free_context(&decoder);
-        decoder = nullptr;
-    }
-   
-    return decoder;
-}
-
-void CMediaPlayerImpl::destoryDecoder(AVCodecContext ** decoder)
-{
-    if (nullptr != *decoder)
-    {
-        avcodec_close(*decoder);
-        avcodec_free_context(decoder);
-        *decoder = nullptr;
-    }
-}
-
-bool CMediaPlayerImpl::decodeVideoPacket(const AVPacket * pkt, AVFrame * frm, bool * got)
-{
-    if (nullptr == pkt || nullptr == frm || nullptr == _video_decoder)
-    {
-        log_msg_warn("Input param is nullptr!");
-        return false;
-    }
-
-    int ret = avcodec_send_packet(_video_decoder, pkt);
-    if (ret < 0)
-    {
-        char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-        av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-        log_msg_warn("avcodec_send_packet failed, err:%s", buff);
-        return false;
-    }
-    ret = avcodec_receive_frame(_video_decoder, frm);
-    if (ret < 0)
-    {
-        if (ret == AVERROR(EAGAIN))
-        {
-            *got = false;
-            return true;
-        }
-        char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-        av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-        log_msg_warn("avcodec_receive_frame failed, err:%s", buff);
-        return false;
-    }
-
-    *got = true;
 
     return true;
 }
 
-bool CMediaPlayerImpl::decodeAudioPacket(const AVPacket * pkt, AVFrame * frm, bool * got)
+bool CMediaPlayerImpl::setVolume(const int volume)
 {
-    if (nullptr == pkt || nullptr == frm || nullptr == _audio_decoder)
+    if (nullptr == _ctx || nullptr == _audio_stream)
     {
-        log_msg_warn("Input param is nullptr!");
+        log_msg_warn("There is no opened file ...");
         return false;
     }
 
-    int ret = avcodec_send_packet(_audio_decoder, pkt);
-    if (ret < 0)
-    {
-        char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-        av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-        log_msg_warn("avcodec_send_packet failed, err:%s", buff);
+    if (nullptr == _audio_render)
         return false;
-    }
-    ret = avcodec_receive_frame(_audio_decoder, frm);
-    if (ret < 0)
-    {
-        if (ret == AVERROR(EAGAIN))
-        {
-            *got = false;
-            return true;
-        }
-        char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-        av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-        log_msg_warn("avcodec_receive_frame failed, err:%s", buff);
-        return false;
-    }
 
-    *got = true;
+    if (volume <= 0)
+        _audio_render->setVolume(0);
+    else if (volume >= 128)
+        _audio_render->setVolume(128);
+    else
+        _audio_render->setVolume(volume);
 
     return true;
 }
 
-bool CMediaPlayerImpl::createVideoPlayer(const void * wnd, int width, int height)
+bool CMediaPlayerImpl::initVideoStream()
 {
-    if (nullptr == wnd)
+    if (_video_index.empty())
     {
-        log_msg_warn("Input param is nullptr.");
+        log_msg_info("No video stream");
+        return true;
+    }
+
+    if (nullptr == _video_stream)
+    {
+        log_msg_warn("Video stream is nullptr.");
         return false;
     }
 
-    // ´´½¨´°¿Ú
-    _player_wnd = SDL_CreateWindowFrom(wnd);
-    if (nullptr == _player_wnd)
+    _video_decoder = new(std::nothrow) CAVDecoderImpl();
+    if (nullptr == _video_decoder)
     {
-        log_msg_warn("SDL_CreateWindowFrom failed.");
+        log_msg_error("new(std::nothrow) CAVDecoderImpl failed.");
         return false;
     }
-    // ´´½¨äÖÈ¾Æ÷
-    _sdl_render = SDL_CreateRenderer(_player_wnd, -1, SDL_RENDERER_TARGETTEXTURE);
-    if (nullptr == _sdl_render)
+
+    // åˆ›å»ºè§†é¢‘è§£ç å™¨
+    const auto * codecpar = _video_stream->codecpar;
+    if (!_video_decoder->create(codecpar))
     {
-        log_msg_warn("SDL_CreateRenderer failed.");
-        goto ERR;
-    }
-    // ´´½¨ÎÆÀíÆ÷
-    _sdl_texture = SDL_CreateTexture(_sdl_render, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, width, height);
-    if (nullptr == _sdl_render)
-    {
-        log_msg_warn("SDL_CreateTexture failed!");
-        goto ERR;
+        log_msg_warn("Create video decoder failed.");
+        uninitVideoStream();
+        return false;
     }
 
-    _wnd_width = width;
-    _wnd_height = height;
+    _pix_fmt = static_cast<AVPixelFormat>(codecpar->format);
+    _frm_width = codecpar->width;
+    _frm_height = codecpar->height;
+
+    // åˆ›å»ºè§†é¢‘è½¬æ¢å™¨
+    _video_rescaler = new(std::nothrow) CVideoRescalerImpl();
+    if (nullptr == _video_rescaler)
+    {
+        log_msg_error("new (std::nothrow)CMediaPlayerRescaler failed!");
+        uninitVideoStream();
+        return false;
+    }
+    if (!_video_rescaler->create(_pix_fmt, _frm_width, _frm_height, AV_PIX_FMT_YUV420P, _wnd_width, _wnd_height))
+    {
+        log_msg_warn("create rescaler failed!");
+        uninitVideoStream();
+        return false;
+    }
 
     return true;
+}
 
-ERR:
-    destoryVideoPlayer();
+void CMediaPlayerImpl::uninitVideoStream()
+{
+    if (nullptr != _video_rescaler)
+    {
+        _video_rescaler->destroy();
+        delete _video_rescaler;
+        _video_rescaler = nullptr;
+    }
 
-    return false;
+    if (nullptr != _video_decoder)
+    {
+        _video_decoder->destroy();
+        delete _video_decoder;
+        _video_decoder = nullptr;
+    }
+
+    _video_stream = nullptr;
+    _video_cur_index = -1;
+}
+
+bool CMediaPlayerImpl::initAudioStream()
+{
+    if (_audio_index.empty())
+    {
+        log_msg_info("No audio stream.");
+        return true;
+    }
+
+    if (nullptr == _audio_stream)
+    {
+        log_msg_warn("Audio stream is nullptr.");
+        return false;
+    }
+
+    // åˆ›å»ºéŸ³é¢‘è§£ç å™¨
+    _audio_decoder = new(std::nothrow) CAVDecoderImpl();
+    if (nullptr == _audio_decoder)
+    {
+        log_msg_warn("create audio deocder failed!");
+        return false;
+    }
+    const auto * codecpar = _audio_stream->codecpar;
+    if (!_audio_decoder->create(codecpar))
+    {
+        log_msg_warn("Create audio decoder failed.");
+        uninitAudioStream();
+        return false;
+    }
+
+    // åˆ›å»ºéŸ³é¢‘è½¬æ¢å™¨
+    _audio_rescaler = new(std::nothrow) CAudioRescalerImpl();
+    if (nullptr == _audio_rescaler)
+    {
+        log_msg_warn("new(std::nothrow) CAudioRescalerImpl failed!");
+        uninitAudioStream();
+        return false;
+    }
+
+    if (!_audio_rescaler->create(codecpar->channel_layout, AV_SAMPLE_FMT_S16, codecpar->sample_rate, codecpar->channel_layout,
+                                 static_cast<AVSampleFormat>(codecpar->format), codecpar->sample_rate, codecpar->frame_size))
+    {
+        log_msg_warn("Create audio rescaler failed.");
+        uninitAudioStream();
+        return false;
+    }
+
+    return true;
+}
+
+void CMediaPlayerImpl::uninitAudioStream()
+{
+    if (nullptr != _audio_rescaler)
+    {
+        _audio_rescaler->destroy();
+        delete _audio_rescaler;
+        _audio_rescaler = nullptr;
+    }
+
+    if (nullptr != _audio_decoder)
+    {
+        _audio_decoder->destroy();
+        delete _audio_decoder;
+        _audio_decoder = nullptr;
+    }
+
+    _audio_stream = nullptr;
+    _audio_cur_index = -1;
+}
+
+bool CMediaPlayerImpl::createVideoPlayer(const void * wnd, const int width, const int height)
+{
+    if (_video_index.empty())
+    {
+        return true;
+    }
+
+    _video_render = new(std::nothrow) CVideoRendererSDL();
+    if (nullptr == _video_render)
+    {
+        log_msg_error("new(std::nothrow) CVideoRendererSDL() failed");
+        return false;
+    }
+    if (!_video_render->create(wnd, width, height))
+    {
+        log_msg_warn("Create video player failed!");
+        delete _video_render;
+        _video_render = nullptr;
+        return false;
+    }
+
+    return true;
 }
 
 void CMediaPlayerImpl::destoryVideoPlayer()
 {
-    if (_sdl_texture)
+    if (nullptr != _video_render)
     {
-        SDL_DestroyTexture(_sdl_texture);
-        _sdl_texture = nullptr;
-    }
-    if (_sdl_render)
-    {
-        SDL_DestroyRenderer(_sdl_render);
-        _sdl_render = nullptr;
-    }
-    if (_player_wnd)
-    {
-        SDL_DestroyWindow(_player_wnd);
-        _player_wnd = nullptr;
+        _video_render->destroy();
+        delete _video_render;
+        _video_render = nullptr;
     }
 }
 
 bool CMediaPlayerImpl::createAudioPlayer()
 {
-    _audio_info = (audio_info_t *)malloc(sizeof(audio_info_t));
-    if (nullptr == _audio_info)
+    if (_audio_index.empty())
     {
-        log_msg_error("");
-        return false;
+        return true;
     }
-    _audio_info->chunk = _audio_info->pos = nullptr;
-    _audio_info->volume = _volume.load();
-    _audio_info->len = 0;
 
-    SDL_AudioSpec audio_player;
-    audio_player.freq = _audio_decoder->sample_rate; //¸ù¾ÝÄãÂ¼ÖÆµÄPCM²ÉÑùÂÊ¾ö¶¨
-    audio_player.format = AUDIO_S16SYS;
-    audio_player.channels = _audio_decoder->channels;
-    audio_player.silence = 0;
-    audio_player.samples = _audio_decoder->frame_size;
-    audio_player.callback = readAudioDataCb;
-    audio_player.userdata = _audio_info;
-    if (SDL_OpenAudio(&audio_player, nullptr) < 0)
+    _audio_render = new(std::nothrow) CAudioRendererSDL();
+    if (nullptr == _audio_render)
     {
-        log_msg_warn("SDL_OpenAudio failed!");
+        log_msg_error("Create audio render instance failed!");
         return false;
     }
+
+    const auto & cp = _audio_stream->codecpar;
+    return _audio_render->create(cp->sample_rate, cp->channels, cp->frame_size);
 
     return true;
 }
 
 void CMediaPlayerImpl::destoryAudioPlayer()
 {
-
-}
-
-bool CMediaPlayerImpl::createAudioRescaler()
-{
-    _audio_rescaler = swr_alloc();
-    if (nullptr == _audio_rescaler)
+    if (nullptr != _audio_render)
     {
-        log_msg_warn("swr_alloc failed!");
-        return false;
+        _audio_render->destroy();
+        delete _audio_render;
+        _audio_render = nullptr;
     }
-
-    _audio_rescaler = swr_alloc_set_opts(_audio_rescaler, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, 44100,
-                                         av_get_default_channel_layout(_audio_decoder->channels),
-                                         _audio_decoder->sample_fmt, _audio_decoder->sample_rate,
-                                         0, nullptr);
-    if (nullptr == _audio_rescaler)
-    {
-        log_msg_warn("swr_alloc_set_opts");
-        return false;
-    }
-
-    if (swr_init(_audio_rescaler) < 0)
-    {
-        log_msg_warn("swr_init failed!");
-        swr_free(&_audio_rescaler);
-        return false;
-    }
-
-    return true;
-}
-
-void CMediaPlayerImpl::destoryAudioRescaler()
-{
-
 }
 
 void CMediaPlayerImpl::recvPacketsThr()
@@ -550,9 +516,9 @@ void CMediaPlayerImpl::recvPacketsThr()
     std::unique_lock<std::mutex> lck(_packets_mtx);
     _packets_cond.wait(lck);
 
-    _video_cond.notify_one();
-    _audio_cond.notify_one();
-
+    int64_t audio_last_dts = AV_NOPTS_VALUE;
+    int64_t video_last_dts = AV_NOPTS_VALUE;
+    int pkt_cnt = 0;
     while (_is_init)
     {
         AVPacket pkt;
@@ -566,28 +532,73 @@ void CMediaPlayerImpl::recvPacketsThr()
             continue;
         }
 
-        if (_video_queue.size() > 500 || _audio_queue.size() > 500)
+        if (_is_skip)
+        {
+            while (!_video_done || !_audio_done)
+            {
+                _audio_clock.store(static_cast<double>(_dst_pos));
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            }
+
+            int64_t ts = 0;
+            int stream_index = 0;
+            if (_video_cur_index.load() >= 0)
+            {
+                stream_index = _video_cur_index.load();
+                ts = static_cast<int64_t>(static_cast<double>(_dst_pos.load()) / av_q2d(_video_stream->time_base));
+            }
+            else
+            {
+                stream_index = _audio_cur_index.load();
+                ts = static_cast<int64_t>(static_cast<double>(_dst_pos.load()) * av_q2d(_audio_stream->time_base));
+            }
+            if (!_ctx->seek(stream_index, ts))
+            {
+                log_msg_warn("seek failed");
+                break;
+            }
+
+            _is_skip = false;
+            _audio_clock.store(static_cast<double>(_dst_pos));
+            _dst_pos.store(0);
+            _video_done.store(false);
+            _audio_done.store(false);
+            video_last_dts = AV_NOPTS_VALUE;
+            audio_last_dts = AV_NOPTS_VALUE;
+            _audio_render->mute(false);
+        }
+
+        if (_video_queue.size() > 200 || _audio_queue.size() > 200)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             continue;
         }
 
-        int ret = av_read_frame(_fmt_ctx, &pkt);
-        if (ret < 0)
+        if (!_ctx->readPacket(&pkt))
         {
-            char buff[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-            av_make_error_string(buff, AV_ERROR_MAX_STRING_SIZE, ret);
-            log_msg_warn("%s", buff);
+            pkt.stream_index = -1;
+            _video_queue.push(pkt);
+            _video_cond.notify_one();
+            _audio_queue.push(pkt);
+            _audio_cond.notify_one();
             break;
         }
-        if (_video_index == pkt.stream_index)
+
+        if (_video_cur_index == pkt.stream_index && pkt.dts > video_last_dts)
+        {
             _video_queue.push(pkt);
-        else if (_audio_cur_index = pkt.stream_index)
+            video_last_dts = pkt.dts;
+            _video_cond.notify_one();
+        }
+        else if (_audio_cur_index == pkt.stream_index && pkt.dts > audio_last_dts)
+        {
             _audio_queue.push(pkt);
+            audio_last_dts = pkt.dts;
+            _audio_cond.notify_one();
+        }
         else
             av_packet_unref(&pkt);
     }
-    _is_over = true;
 }
 
 void CMediaPlayerImpl::dealVideoPacketsThr()
@@ -595,76 +606,87 @@ void CMediaPlayerImpl::dealVideoPacketsThr()
     std::unique_lock<std::mutex> lck(_video_mtx);
     _video_cond.wait(lck);
 
-    if (nullptr == _rescaler)
+    if (nullptr == _video_rescaler)
     {
-        log_msg_warn("no available rescaler!");
+        log_msg_warn("No available video rescaler!");
         return;
     }
 
-    AVFrame * frm = av_frame_alloc();
-    if (nullptr == frm)
+    if (nullptr == _video_render)
     {
-        log_msg_warn("av_frame_alloc failed!");
+        log_msg_warn("No available video player!");
         return;
     }
 
     while (_is_init)
     {
-        // Ã»ÔÚ²¥·ÅÖÐ
+        // æ²¡åœ¨æ’­æ”¾ä¸­
         if (!_is_playing)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             continue;
         }
 
-        // ²¥·ÅÊÓÆµ
+        if (_is_skip)
+        {
+            if (!_video_done.load())
+            {
+                _video_queue.clear();
+                _video_decoder->reopen();
+                _video_done.store(true);
+            }
+            continue;
+        }
+
+        // æ’­æ”¾è§†é¢‘
+        bool is_succ = false;
+
         AVPacket pkt;
+        av_init_packet(&pkt);
         if (!_video_queue.pop(pkt))
         {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             continue;
+        }
+        if (pkt.stream_index < 0)
+            is_succ = _video_decoder->send(nullptr);
+        else
+        {
+            is_succ = _video_decoder->send(&pkt);
+            av_packet_unref(&pkt);
+        }
+
+        if (!is_succ)
+        {
+            log_msg_warn("decode video packet failed!");
+            break;
         }
 
         bool got = false;
-        if (!decodeVideoPacket(&pkt, frm, &got))
+        AVFrame frm = { };
+        while (_video_decoder->recv(got, &frm) && got && !_is_skip.load())
         {
-            log_msg_warn("decodeVideoPacket failed!");
-            av_packet_unref(&pkt);
-            break;
+            got = false;
+            AVFrame yuv_frm = { 0 };
+            if (!_video_rescaler->rescale(&frm, &yuv_frm))
+            {
+                log_msg_warn("rescale failed!");
+                continue;
+            }
+
+            _video_render->setData(yuv_frm.data, yuv_frm.linesize);
+
+            double pts = frm.best_effort_timestamp == AV_NOPTS_VALUE ? 0.0 : frm.best_effort_timestamp;
+            pts = static_cast<double>(pts) * av_q2d(_video_stream->time_base);
+            double delay = pts - _audio_clock;
+            if (_audio_clock.load() > 0.0 && delay > 0.0)
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(delay * 1000.0)));
+            else if (_audio_index.empty() && AV_NOPTS_VALUE != frm.pkt_duration)
+            {
+                const auto delay_ms = static_cast<double>(frm.pkt_duration) * av_q2d(_video_stream->time_base);
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(delay_ms * 1000.0)));
+            }
         }
-        if (!got)
-        {
-            av_packet_unref(&pkt);
-            continue;
-        }
-
-        double pts = frm->best_effort_timestamp == AV_NOPTS_VALUE ? 0.0 : frm->best_effort_timestamp;
-        pts = static_cast<double>(pts) * av_q2d(_video_stream->time_base);
-        double delay = pts - _audio_clock;
-        if (delay > 0)
-            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(delay * 1000)));
-
-        AVFrame yuv_frm = { 0 };
-        if (!_rescaler->rescale(frm, &yuv_frm))
-        {
-            log_msg_warn("rescale failed!");
-            av_packet_unref(&pkt);
-            continue;
-        }
-
-        SDL_UpdateYUVTexture(_sdl_texture, &_sdl_rect,
-                             yuv_frm.data[0],
-                             yuv_frm.linesize[0],
-                             yuv_frm.data[1],
-                             yuv_frm.linesize[1],
-                             yuv_frm.data[2],
-                             yuv_frm.linesize[2]);
-
-        _sdl_rect = { 0, 0, _wnd_width, _wnd_height };
-
-        SDL_RenderClear(_sdl_render);
-        SDL_RenderCopy(_sdl_render, _sdl_texture, nullptr, &_sdl_rect);
-        SDL_RenderPresent(_sdl_render);
-        av_packet_unref(&pkt);
     }
 }
 
@@ -673,62 +695,74 @@ void CMediaPlayerImpl::dealAudioPacketsThr()
     std::unique_lock<std::mutex> lck(_audio_mtx);
     _audio_cond.wait(lck);
 
-    int out_buff_size = av_samples_get_buffer_size(nullptr, av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO), 
-                                                   1024, AV_SAMPLE_FMT_S16, 64);
-    uint8_t * out_buff = (uint8_t *)av_malloc(192000 * 2);
-
-    AVFrame * frm = av_frame_alloc();
-    if (nullptr == frm)
-    {
-        log_msg_warn("av_frame_alloc failed!");
-        return;
-    }
-
     while (_is_init)
     {
-        // Ã»ÔÚ²¥·ÅÖÐ
+        // æ²¡åœ¨æ’­æ”¾ä¸­
         if (!_is_playing)
         {
+            SDL_PauseAudio(1);
             continue;
         }
 
-        // ²¥·ÅÊÓÆµ
+        if (_is_skip)
+        {
+            if (!_audio_done.load())
+            {
+                _audio_clock.store(-1.0);
+                _audio_queue.clear();
+                _audio_decoder->reopen();
+                _audio_done.store(true);
+            }
+            continue;
+        }
+
+        // æ’­æ”¾éŸ³é¢‘
+        bool is_succ = false;
+
         AVPacket pkt;
+        av_init_packet(&pkt);
         if (!_audio_queue.pop(pkt))
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             continue;
         }
-
-        bool got = false;
-       
-        if (!decodeAudioPacket(&pkt, frm, &got))
+        if (pkt.stream_index < 0)
+            is_succ = _audio_decoder->send(nullptr);
+        else
         {
-            log_msg_warn("decodeAudioPacket failed!");
+            is_succ = _audio_decoder->send(&pkt);
+            av_packet_unref(&pkt);
+        }
+
+        if (!is_succ)
+        {
+            log_msg_warn("decode audio packet failed!");
             break;
         }
-        if (!got)
+
+        int out_buff_size = 0;
+        uint8_t * out_buff = nullptr;
+        AVFrame frm = {};
+        bool got = false;
+        while (_audio_decoder->recv(got, &frm) && got && !_is_skip.load())
         {
-            av_packet_unref(&pkt);
-            continue;
+            if (frm.best_effort_timestamp != AV_NOPTS_VALUE)
+            {
+                const auto ts = static_cast<double>(frm.best_effort_timestamp) * av_q2d(_audio_stream->time_base);
+                _audio_clock.store(ts);
+            }
+            if (_audio_rescaler->rescale(&frm, &out_buff, &out_buff_size))
+            {
+                _audio_render->fillData(out_buff, out_buff_size);
+            }
+
+            while (!_audio_render->finished())
+            {
+                if (!_is_skip.load())
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                else
+                    _audio_render->fillData(nullptr, 0);
+            }
         }
-
-        if (frm->best_effort_timestamp != AV_NOPTS_VALUE)
-            _audio_clock = static_cast<double>(frm->best_effort_timestamp) * av_q2d(_audio_stream->time_base);
-
-        swr_convert(_audio_rescaler, &out_buff, 192000, (const uint8_t **)(frm->data), frm->nb_samples);
-        _audio_info->chunk = (uint8_t *)out_buff;
-        _audio_info->len = out_buff_size;
-        _audio_info->pos = _audio_info->chunk;
-        SDL_PauseAudio(0);
-
-        av_packet_unref(&pkt);
-        while (_audio_info->len > 0)
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
-}
-
-double CMediaPlayerImpl::getAudioClock()
-{
-    return 0.0;
 }

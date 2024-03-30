@@ -1,7 +1,8 @@
-#include "MediaPlayerRescaler.h"
-#include "libos.h"
+ï»¿#include "VideoRescalerImpl.h"
+#include "log.h"
 
-bool CMediaPlayerRescaler::create(AVPixelFormat in_fmt, int in_width, int in_height, AVPixelFormat out_fmt, int out_width, int out_height)
+bool CVideoRescalerImpl::create(const AVPixelFormat in_fmt, const int in_width, const int in_height,
+                                const AVPixelFormat out_fmt, const int out_width, const int out_height)
 {
     if (_rescaler)
     {
@@ -9,19 +10,19 @@ bool CMediaPlayerRescaler::create(AVPixelFormat in_fmt, int in_width, int in_hei
         return false;
     }
 
-    // ÅÐ¶ÏÏñËØ¸ñÊ½ÊÇ·ñÖ§³Ö
+    // åˆ¤æ–­åƒç´ æ ¼å¼æ˜¯å¦æ”¯æŒ
     if (!sws_isSupportedInput(in_fmt))
     {
-        log_msg_warn("Input pixel:%d format is not supported, fmt:%s", in_fmt);
+        log_msg_warn("Input pixel:%d format is not supported", in_fmt);
         return false;
     }
     if (!sws_isSupportedOutput(out_fmt))
     {
-        log_msg_warn("Output pixel:%d format is not supported, fmt:%s", out_fmt);
+        log_msg_warn("Output pixel:%d format is not supported.", out_fmt);
         return false;
     }
 
-    // ÍêÈ«ÏàÍ¬£¬²»ÐèÒª×ª»»
+    // å®Œå…¨ç›¸åŒï¼Œä¸éœ€è¦è½¬æ¢
     if (in_width == out_width && in_height == out_height && in_fmt == out_fmt)
     {
         log_msg_info("No need swscale!");
@@ -58,25 +59,29 @@ bool CMediaPlayerRescaler::create(AVPixelFormat in_fmt, int in_width, int in_hei
     return true;
 }
 
-void CMediaPlayerRescaler::destory()
+void CVideoRescalerImpl::destroy()
 {
-    if (_out_data[0])
+    if (nullptr != _rescaler)
+    {
+        sws_freeContext(_rescaler);
+        _rescaler = nullptr;
+    }
+
+    if (nullptr != _out_data)
     {
         av_freep(&_out_data[0]);
         memset(_out_data, 0, sizeof(_out_data));
         memset(_out_linesize, 0, sizeof(_out_linesize));
     }
 
-    if (_rescaler)
-    {
-        sws_freeContext(_rescaler);
-        _rescaler = nullptr;
-    }
-
-    _need_rescale = false;
+    _in_width = 0;
+    _in_height = 0;
+    _out_width = 0;
+    _out_height = 0;
+    _need_rescale = true;
 }
 
-bool CMediaPlayerRescaler::rescale(const AVFrame * in_frm, AVFrame * out_frm)
+bool CVideoRescalerImpl::rescale(const AVFrame * in_frm, AVFrame * out_frm)
 {
     if (nullptr == in_frm || nullptr == in_frm->data[0] || 0 >= in_frm->linesize[0] || nullptr == out_frm)
     {
@@ -109,7 +114,7 @@ bool CMediaPlayerRescaler::rescale(const AVFrame * in_frm, AVFrame * out_frm)
     return true;
 }
 
-void CMediaPlayerRescaler::copyFrame(AVFrame * dst_frm, const AVFrame * src_frm)
+void CVideoRescalerImpl::copyFrame(AVFrame * dst_frm, const AVFrame * src_frm)
 {
     if (nullptr == src_frm || nullptr == dst_frm)
     {
@@ -117,11 +122,11 @@ void CMediaPlayerRescaler::copyFrame(AVFrame * dst_frm, const AVFrame * src_frm)
         return;
     }
 
-    // ¿½±´Êý¾Ý
+    // æ‹·è´æ•°æ®
     memcpy(dst_frm->data, _out_data, sizeof(_out_data[0]) * AV_NUM_DATA_POINTERS);
     memcpy(dst_frm->linesize, _out_linesize, sizeof(_out_linesize[0]) * AV_NUM_DATA_POINTERS);
 
-    // ¿½±´²ÎÊý
+    // æ‹·è´å‚æ•°
     dst_frm->format = static_cast<int>(_out_fmt);
     dst_frm->pts = dst_frm->pts;
     dst_frm->pkt_dts = src_frm->pkt_dts;
